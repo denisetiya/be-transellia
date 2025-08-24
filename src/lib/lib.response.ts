@@ -32,7 +32,7 @@ export default class response {
     static badRequest(
         res: Response, 
         message: string = "Error",
-        errorDetail: Record<string, unknown> | string | null = null, 
+        errorDetail: Record<string, unknown> | Record<string, unknown>[] | string | null = null, 
         meta: Record<string, unknown> | null = null) {
         res.status(400).json({
             success: false,
@@ -56,7 +56,7 @@ export default class response {
     static internalServerError(
         res: Response, 
         message: string = "Internal Server Error",
-        errorDetail: Record<string, unknown> | string | null = null,
+        errorDetail: Record<string, unknown> | Record<string, unknown>[] | string | null = null,
         meta: Record<string, unknown> | null = null) {
         res.status(500).json({
             success: false,
