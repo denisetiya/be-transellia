@@ -5,7 +5,6 @@ import Hash from "../../lib/lib.hash";
 import Jwt from "../../lib/lib.jwt";
 import env from "../../config/env.config";
 import logger from "../../lib/lib.logger";
-import { generateId } from "../../lib/lib.id.generator";
 import AuthErrorHandler from "./auth.error";
 import type { AuthLoginResult, AuthRegisterResult } from "./auth.type";
 
@@ -110,14 +109,11 @@ export default class AuthService {
             // Hash password
             const hashedPassword = Hash.hash(data.password, this.salt);
             
-            // Generate user ID
-            const userId = generateId();
 
             // Create user with transaction for data consistency
             const newUser = await prisma.$transaction(async (tx) => {
                 const user = await tx.user.create({
-                    data: {
-                        id: userId,
+                    data: {                        
                         email: data.email,
                         password: hashedPassword,
                         role: 'USER',
