@@ -1,187 +1,148 @@
-# Auth Error Handling Documentation
+## Error Handling System
 
-## Overview
+The project implements a centralized, modular error handling system for consistent error management across all modules.
 
-Sistem error handling untuk auth module telah diperbaharui dengan fitur-fitur berikut:
+### Auth Module Error Types
 
-## Fitur Utama
+The authentication module (`src/modules/auth/auth.error.ts`) defines standardized error types for all authentication operations:
 
-### 1. Comprehensive Error Handling
-- **Try-catch blocks** di semua method controller dan service
-- **Structured error responses** dengan format yang konsisten
-- **Detailed logging** untuk debugging dan monitoring
-- **Custom error types** untuk berbagai jenis error
+#### Error Type Definitions
 
-### 2. Custom Error Classes
+| Error Type | Description | HTTP Status | Usage |
+|------------|-------------|-------------|-------|
+| `INVALID_CREDENTIALS` | Wrong email or password during login | 401 Unauthorized | Login failures |
+| `CONFLICT` | General conflict errors | 409 Conflict | Data conflicts |
+| `EMAIL_ALREADY_EXISTS` | Registration with existing email | 409 Conflict | Registration failures |
+| `DATABASE_CONNECTION` | Database connectivity issues | 500 Internal Server Error | DB connection problems |
+| `TIMEOUT` | Request timeout errors | 500 Internal Server Error | Operation timeouts |
+| `INTERNAL_ERROR` | General system errors | 500 Internal Server Error | Unexpected system failures |
+| `FOREIGN_KEY_ERROR` | Database foreign key constraint violations | 400 Bad Request | Data integrity issues |
+| `VALIDATION_ERROR` | Input validation failures | 400 Bad Request | Invalid request data |
+| `USER_NOT_FOUND` | User lookup failures | 401 Unauthorized | User not found scenarios |
 
-#### AuthServiceError
-Custom error class dengan tipe-tipe error yang spesifik:
-
-```typescript
-// Contoh penggunaan
-throw AuthServiceError.invalidCredentials("Email atau password salah");
-throw AuthServiceError.emailAlreadyExists("Email sudah terdaftar");
-```
-
-#### Error Types:
-- `INVALID_CREDENTIALS` - Email/password salah
-- `USER_NOT_FOUND` - User tidak ditemukan  
-- `EMAIL_ALREADY_EXISTS` - Email sudah terdaftar
-- `WEAK_PASSWORD` - Password terlalu lemah
-- `INVALID_TOKEN` - Token tidak valid
-- `TOKEN_EXPIRED` - Token kadaluarsa
-- `DATABASE_CONNECTION` - Masalah koneksi database
-- `TIMEOUT` - Request timeout
-- `FOREIGN_KEY_ERROR` - Error foreign key constraint
-- `INTERNAL_ERROR` - Error sistem internal
-- `VALIDATION_ERROR` - Error validasi input
-
-### 3. Middleware Error Handling
-
-#### AuthMiddleware.errorHandler
-Global error handler yang menangani:
-- **Custom AuthServiceError**
-- **Prisma database errors** 
-- **JWT token errors**
-- **Zod validation errors**
-- **Generic JavaScript errors**
-
-#### AuthMiddleware.validateToken
-Middleware untuk validasi JWT token pada protected routes.
-
-#### AuthMiddleware.requireRole
-Middleware untuk membatasi akses berdasarkan role user.
-
-#### AuthMiddleware.requireEmployee  
-Middleware untuk membatasi akses khusus employee.
-
-#### AuthMiddleware.rateLimitAuth
-Rate limiting untuk mencegah brute force attacks.
-
-### 4. Enhanced Logging
-
-Semua error dan aktivitas penting di-log dengan format:
-```
-[timestamp] [LEVEL] [App] message
-```
-
-**Log Levels:**
-- `INFO` - Aktivitas normal (login success, registration, dll)
-- `WARN` - Peringatan (failed login attempts, validation errors)
-- `ERROR` - Error yang memerlukan perhatian
-
-### 5. Input Validation
-
-**Zod Schema Validation** untuk:
-- Email format validation
-- Password strength requirements  
-- Required field validation
-- Data type validation
-
-## Penggunaan
-
-### Basic Router Setup
-```typescript
-import authRouter from './modules/auth/auth.router';
-app.use('/api/auth', authRouter);
-```
-
-### Protected Routes Example
-```typescript
-// Setelah middleware diaktifkan kembali
-app.get('/profile', 
-  AuthMiddleware.validateToken, 
-  UserController.getProfile
-);
-
-app.get('/admin/users',
-  AuthMiddleware.validateToken,
-  AuthMiddleware.requireRole(['ADMIN']),
-  AdminController.getUsers  
-);
-```
-
-### Error Response Format
-
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Login berhasil",
-  "data": {
-    "user": {...},
-    "token": "jwt_token_here"
-  }
-}
-```
+#### Error Response Structure
 
 **Error Response:**
-```json
+```typescript
 {
-  "success": false, 
-  "message": "Email atau password salah",
-  "errorDetail": "Additional error info (optional)"
+  data: null,
+  message: string,
+  success: false,
+  errorType: AuthErrorType
 }
 ```
 
-## API Endpoints
-
-### POST /login
-Login user dengan email dan password.
-
-**Request Body:**
-```json
+**Success Response (Login):**
+```typescript
 {
-  "email": "user@example.com",
-  "password": "password123"
+  data: {
+    id: string,
+    email: string,
+    role: string | null,
+    subscriptionType: string | null,
+    isEmployee: boolean | null,
+    UserDetails: {
+      name: string | null,
+      imageProfile: string | null,
+      phoneNumber: string | null,
+      address: string | null
+    } | null
+  },
+  message: string,
+  token: string | null,
+  success: true
 }
 ```
 
-### POST /register  
-Registrasi user baru.
+#### Usage Examples
 
-**Request Body:**
-```json
-{
-  "email": "user@example.com", 
-  "password": "password123",
-  "name": "User Name"
+**Service Layer:**
+```typescript
+import AuthErrorHandler, { AuthErrorType } from './auth.error';
+
+// Using pre-defined error templates
+return AuthErrorHandler.errors.invalidCredentials(email);
+return AuthErrorHandler.errors.emailAlreadyExists(email);
+
+// Creating custom service errors
+return AuthErrorHandler.createServiceError(
+  AuthErrorType.VALIDATION_ERROR,
+  'Custom validation message',
+  email
+);
+
+// Handling database errors
+return AuthErrorHandler.handleDatabaseError(error, email, 'login');
+```
+
+**Controller Layer:**
+```typescript
+import AuthErrorHandler from './auth.error';
+
+// Handle service errors
+if (!loginResult.success) {
+  AuthErrorHandler.handleControllerServiceError(res, loginResult, email);
+  return;
+}
+
+// Handle exceptions
+catch (error) {
+  AuthErrorHandler.handleControllerException(res, error, 'login', email);
+  return;
 }
 ```
 
-## Database Error Handling
+#### Available Error Handler Methods
 
-**Prisma Error Codes yang ditangani:**
-- `P2002` - Unique constraint violation
-- `P2025` - Record not found
-- `P2003` - Foreign key constraint violation  
-- `P1001` - Database connection error
+| Method | Purpose | Layer |
+|--------|---------|-------|
+| `createServiceError()` | Create standardized service errors | Service |
+| `handleDatabaseError()` | Handle database-specific errors | Service |
+| `handleControllerServiceError()` | Map service errors to HTTP responses | Controller |
+| `handleControllerException()` | Handle unexpected exceptions | Controller |
+| `errors.invalidCredentials()` | Pre-defined invalid credentials error | Service |
+| `errors.emailAlreadyExists()` | Pre-defined email exists error | Service |
+| `errors.userNotFound()` | Pre-defined user not found error | Service |
+| `errors.validationError()` | Pre-defined validation error | Service |
+| `errors.internalError()` | Pre-defined internal error | Service |
 
-## Security Features
+#### Error Logging
 
-1. **Rate Limiting** - Maksimal 5 percobaan login per 15 menit per IP
-2. **Password Hashing** - Menggunakan custom hash algorithm
-3. **JWT Tokens** - Untuk authentication dengan expiry
-4. **Input Sanitization** - Validasi dan sanitasi input
-5. **Error Message Obfuscation** - Tidak mengekspos informasi sensitif
+All errors are automatically logged with structured information:
+- **Service Errors**: `logger.warn()` with email, error type, and message
+- **Database Errors**: `logger.error()` with detailed error information
+- **Controller Errors**: `logger.warn()` for service errors, `logger.error()` for exceptions
+- **Development Mode**: Detailed error messages included in responses
+- **Production Mode**: Generic error messages for security
 
-## Monitoring & Debugging
+### Adding New Error Types
 
-**Log files mencatat:**
-- User login/registration attempts
-- Failed authentication attempts  
-- Database connection issues
-- Validation errors
-- System errors dengan stack traces (dev mode)
+To add new error types to the auth module:
 
-**Environment Variables:**
-- `NODE_ENV=development` - Menampilkan detail error di response
-- `NODE_ENV=production` - Menyembunyikan detail error internal
+1. **Add to AuthErrorType enum:**
+```typescript
+export enum AuthErrorType {
+  // ... existing types
+  NEW_ERROR_TYPE = 'NEW_ERROR_TYPE'
+}
+```
 
-## Next Steps
+2. **Add to error handler switch statement:**
+```typescript
+case AuthErrorType.NEW_ERROR_TYPE:
+  response.badRequest(res, message); // or appropriate response method
+  break;
+```
 
-1. **Middleware Integration** - Uncomment middleware di router setelah testing
-2. **Rate Limiting** - Aktifkan rate limiting di production
-3. **Logging Service** - Integrasi dengan external logging service
-4. **Monitoring** - Setup alerting untuk critical errors
-5. **Testing** - Buat unit tests untuk error scenarios
+3. **Add pre-defined error template (optional):**
+```typescript
+static readonly errors = {
+  // ... existing errors
+  newErrorType: (email?: string) => 
+    this.createServiceError(
+      AuthErrorType.NEW_ERROR_TYPE,
+      'Your error message here',
+      email
+    )
+};
+```

@@ -5,73 +5,21 @@ import Jwt from "../../lib/lib.jwt";
 import env from "../../config/env.config";
 import logger from "../../lib/lib.logger";
 import { generateId } from "../../lib/lib.id.generator";
+import AuthErrorHandler, { 
+    type AuthLoginResult, 
+    type AuthRegisterResult 
+} from "./auth.error";
 
 export default class AuthService {
     
-    static salt =  Hash.generateSalt()
-
-
-    private static handleError(error: unknown, email: string, operation: 'login' | 'registration') {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        logger.error(`Database error during ${operation} - Error: ${errorMessage}, Email: ${email}`);
-
-        if (error instanceof Error) {
-            // Handle unique constraint error (for registration)
-            if (error.message.includes('Unique constraint')) {
-                return {
-                    data: null,
-                    message: "Email sudah terdaftar. Silakan gunakan email lain.",
-                    success: false,
-                    errorType: 'CONFLICT'
-                };
-            }
-            
-            // Handle connection errors
-            if (error.message.includes('connection')) {
-                return {
-                    data: null,
-                    message: "Koneksi database bermasalah. Silakan coba lagi.",
-                    success: false,
-                    errorType: 'DATABASE_CONNECTION'
-                };
-            }
-            
-            // Handle timeout errors
-            if (error.message.includes('timeout')) {
-                return {
-                    data: null,
-                    message: "Request timeout. Silakan coba lagi.",
-                    success: false,
-                    errorType: 'TIMEOUT'
-                };
-            }
-
-            // Handle foreign key constraint errors (for registration)
-            if (error.message.includes('Foreign key constraint')) {
-                return {
-                    data: null,
-                    message: "Data referensi tidak valid. Silakan coba lagi.",
-                    success: false,
-                    errorType: 'FOREIGN_KEY_ERROR'
-                };
-            }
-        }
-
-        // Default error response
-        return {
-            data: null,
-            message: "Terjadi kesalahan sistem. Silakan coba lagi.",
-            success: false,
-            errorType: 'INTERNAL_ERROR'
-        };
-    }
+    static salt = Hash.generateSalt();
 
 
     private static generateToken(userData: iUser)  {
         return Jwt.sign({ ...userData }, env.JWT_SECRET, { expiresIn: 86400 });
     }
 
-    static async login(data: iLogin) {
+    static async login(data: iLogin): Promise<AuthLoginResult> {
         try {
             logger.info(`Attempting to find user in database - Email: ${data.email}`);
 
@@ -102,12 +50,7 @@ export default class AuthService {
 
             if (!user) {
                 logger.warn(`User not found - Email: ${data.email}`);
-                return {
-                    data: null,
-                    message: "Email atau password salah. Silakan coba lagi.",
-                    success: false,
-                    errorType: 'INVALID_CREDENTIALS'
-                };
+                return AuthErrorHandler.errors.invalidCredentials(data.email);
             }
 
             // Verify password
@@ -115,12 +58,7 @@ export default class AuthService {
             
             if (!isPasswordValid) {
                 logger.warn(`Invalid password attempt - Email: ${data.email}, UserID: ${user.id}`);
-                return {
-                    data: null,
-                    message: "Email atau password salah. Silakan coba lagi.",
-                    success: false,
-                    errorType: 'INVALID_CREDENTIALS'
-                };
+                return AuthErrorHandler.errors.invalidCredentials(data.email);
             }
 
             // Generate token
@@ -136,13 +74,13 @@ export default class AuthService {
             };
 
         } catch (error) {
-            return this.handleError(error, data.email, 'login');
+            return AuthErrorHandler.handleDatabaseError(error, data.email, 'login');
         } finally {
             await prisma.$disconnect();
         }
     }
 
-    static async register(data: iRegister) {
+    static async register(data: iRegister): Promise<AuthRegisterResult> {
         try {
             logger.info(`Attempting user registration - Email: ${data.email}`);
 
@@ -158,12 +96,7 @@ export default class AuthService {
 
             if (existingUser) {
                 logger.warn(`Registration attempted with existing email - Email: ${data.email}`);
-                return {
-                    data: null,
-                    message: "Email sudah terdaftar. Silakan gunakan email lain atau login.",
-                    success: false,
-                    errorType: 'CONFLICT'
-                };
+                return AuthErrorHandler.errors.emailAlreadyExists(data.email);
             }
 
             // Hash password
@@ -209,7 +142,7 @@ export default class AuthService {
             };
 
         } catch (error) {
-            return this.handleError(error, data.email, 'registration');
+            return AuthErrorHandler.handleDatabaseError(error, data.email, 'registration');
         } finally {
             await prisma.$disconnect();
         }
