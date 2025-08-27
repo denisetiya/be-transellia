@@ -2,7 +2,7 @@
   "compilerOptions": {
     "lib": ["ES2020", "DOM"],
     "target": "ES2020",
-    "module": "ESNext",
+    "module": "CommonJS",
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": false,
@@ -38,6 +38,12 @@
   "ts-node": {
     "esm": true
   },
-  "exclude": ["node_modules", "**/*.spec.ts", "dist"],
-  "include": ["src/**/*", "prisma/**/*"]
+  "exclude": [
+    "node_modules", 
+    "**/*.spec.ts", 
+    "dist",
+    "src/generated/**/*",
+    "prisma/migrations/**/*"
+  ],
+  "include": ["src/**/*"]
 }
