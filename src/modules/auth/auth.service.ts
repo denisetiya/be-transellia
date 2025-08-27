@@ -11,9 +11,7 @@ import type { AuthLoginResult, AuthRegisterResult } from "./auth.type";
 export default class AuthService {
     
     private static generateSaltFromEmail(email: string): string {
-        // Generate a consistent salt based on email
-        // This ensures the same salt is always used for the same user
-        return Hash.hash(email, 'TRANSELLIA_SALT_SEED_2024').substring(0, 16);
+        return Hash.hash(email, env.SALT).substring(0, 16);
     }
 
     private static generateToken(userData: iUser): string | null {
