@@ -15,16 +15,3 @@ export const registerSchema = z.object({
 export type iRegister = z.infer<typeof registerSchema>;
 
 
-export interface iUser {
-    id?: string;
-    email?: string;
-    role?: string | null;
-    subscriptionType?: string | null;
-    UserDetails? : {
-        name: string | null;
-        imageProfile?: string | null;
-        phoneNumber?: string | null;
-        address?: string | null;
-    } | null;
-    isEmployee?: boolean | null;
-}

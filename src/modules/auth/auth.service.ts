@@ -1,14 +1,13 @@
-import type { iLogin, iUser, iRegister } from "./auth.validation";
+import type { iLogin, iRegister } from "./auth.validation";
+import type { iUser } from "./auth.type";
 import prisma from '../../config/prisma.config';
 import Hash from "../../lib/lib.hash";
 import Jwt from "../../lib/lib.jwt";
 import env from "../../config/env.config";
 import logger from "../../lib/lib.logger";
 import { generateId } from "../../lib/lib.id.generator";
-import AuthErrorHandler, { 
-    type AuthLoginResult, 
-    type AuthRegisterResult 
-} from "./auth.error";
+import AuthErrorHandler from "./auth.error";
+import type { AuthLoginResult, AuthRegisterResult } from "./auth.type";
 
 export default class AuthService {
     

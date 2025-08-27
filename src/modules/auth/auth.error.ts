@@ -1,87 +1,8 @@
 import type { Response } from 'express';
 import logger from '../../lib/lib.logger';
 import response from '../../lib/lib.response';
+import { type AuthError, AuthErrorType } from './auth.type';
 
-/**
- * Auth Error Types
- * Standardized error types for authentication operations
- */
-export enum AuthErrorType {
-    INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
-    CONFLICT = 'CONFLICT',
-    DATABASE_CONNECTION = 'DATABASE_CONNECTION',
-    TIMEOUT = 'TIMEOUT',
-    INTERNAL_ERROR = 'INTERNAL_ERROR',
-    FOREIGN_KEY_ERROR = 'FOREIGN_KEY_ERROR',
-    VALIDATION_ERROR = 'VALIDATION_ERROR',
-    USER_NOT_FOUND = 'USER_NOT_FOUND',
-    EMAIL_ALREADY_EXISTS = 'EMAIL_ALREADY_EXISTS'
-}
-
-/**
- * Auth Error Interface
- * Standardized error response structure
- */
-export interface AuthError {
-    data: null;
-    message: string;
-    success: false;
-    errorType: AuthErrorType;
-}
-
-/**
- * Auth Success Interface for Login
- * Standardized success response structure for login
- */
-export interface AuthLoginSuccess {
-    data: {
-        id: string;
-        email: string;
-        password: string;
-        role: string | null;
-        subscriptionType: string | null;
-        isEmployee: boolean | null;
-        UserDetails: {
-            name: string | null;
-            imageProfile: string | null;
-            phoneNumber: string | null;
-            address: string | null;
-        } | null;
-    };
-    message: string;
-    token: string | null;
-    success: true;
-}
-
-/**
- * Auth Success Interface for Registration
- * Standardized success response structure for registration
- */
-export interface AuthRegisterSuccess {
-    data: {
-        id: string;
-        email: string;
-        password: string;
-        role: string | null;
-        subscriptionType: string | null;
-        isEmployee: boolean | null;
-        UserDetails: {
-            name: string | null;
-            imageProfile: string | null;
-            phoneNumber: string | null;
-            address: string | null;
-        } | null;
-    };
-    message: string;
-    token: string;
-    success: true;
-}
-
-/**
- * Auth Service Result Types
- */
-export type AuthLoginResult = AuthLoginSuccess | AuthError;
-export type AuthRegisterResult = AuthRegisterSuccess | AuthError;
 
 /**
  * Auth Error Handler Class
