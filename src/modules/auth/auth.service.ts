@@ -11,7 +11,63 @@ export default class AuthService {
     static salt =  Hash.generateSalt()
 
 
-    static generateToken(userData: iUser) {
+    private static handleError(error: unknown, email: string, operation: 'login' | 'registration') {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error(`Database error during ${operation} - Error: ${errorMessage}, Email: ${email}`);
+
+        if (error instanceof Error) {
+            // Handle unique constraint error (for registration)
+            if (error.message.includes('Unique constraint')) {
+                return {
+                    data: null,
+                    message: "Email sudah terdaftar. Silakan gunakan email lain.",
+                    success: false,
+                    errorType: 'CONFLICT'
+                };
+            }
+            
+            // Handle connection errors
+            if (error.message.includes('connection')) {
+                return {
+                    data: null,
+                    message: "Koneksi database bermasalah. Silakan coba lagi.",
+                    success: false,
+                    errorType: 'DATABASE_CONNECTION'
+                };
+            }
+            
+            // Handle timeout errors
+            if (error.message.includes('timeout')) {
+                return {
+                    data: null,
+                    message: "Request timeout. Silakan coba lagi.",
+                    success: false,
+                    errorType: 'TIMEOUT'
+                };
+            }
+
+            // Handle foreign key constraint errors (for registration)
+            if (error.message.includes('Foreign key constraint')) {
+                return {
+                    data: null,
+                    message: "Data referensi tidak valid. Silakan coba lagi.",
+                    success: false,
+                    errorType: 'FOREIGN_KEY_ERROR'
+                };
+            }
+        }
+
+        // Default error response
+        return {
+            data: null,
+            message: "Terjadi kesalahan sistem. Silakan coba lagi.",
+            success: false,
+            errorType: 'INTERNAL_ERROR'
+        };
+    }
+
+
+    private static generateToken(userData: iUser)  {
         return Jwt.sign({ ...userData }, env.JWT_SECRET, { expiresIn: 86400 });
     }
 
@@ -26,8 +82,21 @@ export default class AuthService {
                 where: {
                     email: data.email
                 },
-                include: {
-                    UserDetails: true
+                select :{
+                    id: true,
+                    password: true,
+                    email: true,
+                    role: true,
+                    subscriptionType: true,
+                    UserDetails : {
+                        select: {
+                            name: true,
+                            imageProfile: true,
+                            phoneNumber: true,
+                            address: true
+                        }
+                    },
+                    isEmployee: true
                 }
             });
 
@@ -62,40 +131,12 @@ export default class AuthService {
             return {
                 data: user,
                 message: "Login berhasil",
-                token: token,
+                token: token ? token : null,
                 success: true
             };
 
         } catch (error) {
-            logger.error(`Database error during login - Error: ${error instanceof Error ? error.message : 'Unknown error'}, Email: ${data.email}`);
-
-            // Handle specific database errors
-            if (error instanceof Error) {
-                if (error.message.includes('connection')) {
-                    return {
-                        data: null,
-                        message: "Koneksi database bermasalah. Silakan coba lagi.",
-                        success: false,
-                        errorType: 'DATABASE_CONNECTION'
-                    };
-                }
-                
-                if (error.message.includes('timeout')) {
-                    return {
-                        data: null,
-                        message: "Request timeout. Silakan coba lagi.",
-                        success: false,
-                        errorType: 'TIMEOUT'
-                    };
-                }
-            }
-
-            return {
-                data: null,
-                message: "Terjadi kesalahan sistem. Silakan coba lagi.",
-                success: false,
-                errorType: 'INTERNAL_ERROR'
-            };
+            return this.handleError(error, data.email, 'login');
         } finally {
             await prisma.$disconnect();
         }
@@ -132,7 +173,7 @@ export default class AuthService {
             const userId = generateId();
 
             // Create user with transaction for data consistency
-            const newUser = await prisma.$transaction(async (tx: typeof prisma) => {
+            const newUser = await prisma.$transaction(async (tx) => {
                 const user = await tx.user.create({
                     data: {
                         id: userId,
@@ -168,53 +209,7 @@ export default class AuthService {
             };
 
         } catch (error) {
-            logger.error(`Database error during registration - Error: ${error instanceof Error ? error.message : 'Unknown error'}, Email: ${data.email}`);
-
-            // Handle specific database errors
-            if (error instanceof Error) {
-                if (error.message.includes('Unique constraint')) {
-                    return {
-                        data: null,
-                        message: "Email sudah terdaftar. Silakan gunakan email lain.",
-                        success: false,
-                        errorType: 'CONFLICT'
-                    };
-                }
-                
-                if (error.message.includes('connection')) {
-                    return {
-                        data: null,
-                        message: "Koneksi database bermasalah. Silakan coba lagi.",
-                        success: false,
-                        errorType: 'DATABASE_CONNECTION'
-                    };
-                }
-                
-                if (error.message.includes('timeout')) {
-                    return {
-                        data: null,
-                        message: "Request timeout. Silakan coba lagi.",
-                        success: false,
-                        errorType: 'TIMEOUT'
-                    };
-                }
-
-                if (error.message.includes('Foreign key constraint')) {
-                    return {
-                        data: null,
-                        message: "Data referensi tidak valid. Silakan coba lagi.",
-                        success: false,
-                        errorType: 'FOREIGN_KEY_ERROR'
-                    };
-                }
-            }
-
-            return {
-                data: null,
-                message: "Terjadi kesalahan sistem. Silakan coba lagi.",
-                success: false,
-                errorType: 'INTERNAL_ERROR'
-            };
+            return this.handleError(error, data.email, 'registration');
         } finally {
             await prisma.$disconnect();
         }

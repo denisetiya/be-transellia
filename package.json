@@ -23,8 +23,6 @@
     "db:push": "pnpm prisma db push",
     "db:migrate": "pnpm prisma migrate dev",
     "db:studio": "pnpm prisma studio",
-    "install": "pnpm install",
-    "update": "pnpm update",
     "add": "pnpm add",
     "remove": "pnpm remove"
   },
@@ -46,7 +44,7 @@
     "typescript": "^5.5.0"
   },
   "dependencies": {
-    "@prisma/client": "^6.14.0",
+    "@prisma/client": "6.14.0",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "firebase-admin": "^13.4.0",

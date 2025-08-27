@@ -20,15 +20,28 @@ model User {
   email     String   @unique
   password  String
   role      String?   @default("user")
-  subscriptionType String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  OwnerAt  Store?
   isEmployee Boolean? @default(false)
-  employeeId String?
-  EmployeeDetail Employee[]
+  OwnerAt  Store?
+  subscriptionType SubscriptionProduct?
+  EmployeeDetail Employee?
+  UserDetails UserDetails?
 }
   
+
+model SubscriptionProduct {
+  id String @id @default(cuid())
+  userId String @unique
+  name String
+  price Float
+  description String?
+  features String[]
+  User User @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+}
 model UserDetails {
   id String @id @default(cuid())
   userId String @unique
@@ -36,6 +49,9 @@ model UserDetails {
   imageProfile String?
   phoneNumber String?
   address String?
+  user User @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Store {

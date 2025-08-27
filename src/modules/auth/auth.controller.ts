@@ -34,7 +34,7 @@ export default class AuthController {
                     res,
                     {
                         user: loginResult.data,
-                        token: loginResult.token
+                        token: 'token' in loginResult ? loginResult.token : null
                     },
                     loginResult.message
                 );
@@ -85,14 +85,14 @@ export default class AuthController {
                     res,
                     {
                         user: registerResult.data,
-                        token: registerResult.token
+                        token: 'token' in registerResult ? registerResult.token : null
                     }
                 );
             } else {
                 logger.warn(`User registration failed - Email: ${data.email}, Reason: ${registerResult.message}`);
                 
                 // Handle specific error types
-                if (registerResult.errorType === 'CONFLICT') {
+                if ((registerResult as any).errorType === 'CONFLICT') {
                     return response.conflict(
                         res,
                         registerResult.message
