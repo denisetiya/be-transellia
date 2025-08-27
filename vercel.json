@@ -16,7 +16,7 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "development"
   },
   "installCommand": "pnpm install",
   "buildCommand": "pnpm build"
