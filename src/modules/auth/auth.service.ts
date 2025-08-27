@@ -34,7 +34,7 @@ export default class AuthService {
                     password: true,
                     email: true,
                     role: true,
-                    subscriptionType: true,
+                    subscriptionId : true,
                     UserDetails : {
                         select: {
                             name: true,
@@ -60,13 +60,22 @@ export default class AuthService {
                 return AuthErrorHandler.errors.invalidCredentials(data.email);
             }
 
+
             // Generate token
             const token = this.generateToken(user);
             
             logger.info(`User login successful - UserID: ${user.id}, Email: ${user.email}`);
 
             return {
-                data: user,
+                data: {
+                    id: user.id,
+                    email: user.email,
+                    password: user.password,
+                    role: user.role,
+                    subscriptionId : user.subscriptionId,
+                    UserDetails: user.UserDetails,
+                    isEmployee: user.isEmployee
+                },
                 message: "Login berhasil",
                 token: token ? token : null,
                 success: true
@@ -112,21 +121,27 @@ export default class AuthService {
                         email: data.email,
                         password: hashedPassword,
                         role: 'USER',
-                        subscriptionType: 'FREE',
                         isEmployee: false,
                         UserDetails: {
                             create: {
                                 name: data.name
                             }
+                        },
+                        subscription : {
+                            connect: {
+                                id: 'cmesn7has0000d5etmb7jw21s'
+                            }
+
                         }
                     },
                     include: {
-                        UserDetails: true
+                        UserDetails: true,
                     }
                 });
 
                 return user;
             });
+
 
             // Generate token
             const token = this.generateToken(newUser);
@@ -134,7 +149,15 @@ export default class AuthService {
             logger.info(`User registration successful - UserID: ${newUser.id}, Email: ${newUser.email}`);
 
             return {
-                data: newUser,
+                data: {
+                    id: newUser.id,
+                    email: newUser.email,
+                    password: newUser.password,
+                    role: newUser.role,
+                    subscriptionId: newUser.subscriptionId || null,
+                    UserDetails: newUser.UserDetails,
+                    isEmployee: newUser.isEmployee
+                },
                 message: "Registrasi berhasil",
                 token: token,
                 success: true

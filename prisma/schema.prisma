@@ -24,7 +24,8 @@ model User {
   updatedAt DateTime @updatedAt
   isEmployee Boolean? @default(false)
   OwnerAt  Store?
-  subscriptionType SubscriptionProduct?
+  subscriptionId  String?
+  subscription SubscriptionProduct? @relation(fields: [subscriptionId], references: [id])
   EmployeeDetail Employee?
   UserDetails UserDetails?
 }
@@ -32,15 +33,13 @@ model User {
 
 model SubscriptionProduct {
   id String @id @default(cuid())
-  userId String @unique
   name String
   price Float
   description String?
   features String[]
-  User User @relation(fields: [userId], references: [id])
+  users User[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
 }
 model UserDetails {
   id String @id @default(cuid())

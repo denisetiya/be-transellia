@@ -40,7 +40,7 @@ export interface AuthLoginSuccess {
         email: string;
         password: string;
         role: string | null;
-        subscriptionType: string | null;
+        subscriptionId: string | null;
         isEmployee: boolean | null;
         UserDetails: {
             name: string | null;
@@ -61,7 +61,7 @@ export interface AuthRegisterSuccess {
         email: string;
         password: string;
         role: string | null;
-        subscriptionType: string | null;
+        subscriptionId: string | null;
         isEmployee: boolean | null;
         UserDetails: {
             name: string | null;
