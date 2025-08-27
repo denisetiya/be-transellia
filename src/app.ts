@@ -1,12 +1,13 @@
 import express,{ type Application } from 'express';
 import appRouter from './app.routes';
 import env from './config/env.config';
+import logger from './lib/lib.logger';
 
 const app: Application = express();
 
 // Essential middleware
 app.use(express.json({ limit: '10mb' })); // Parse JSON request bodies
-app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Parse URL-encoded bodies
+app.use(express.urlencoded({ extended: true, limit: '30mb' })); // Parse URL-encoded bodies
 
 // CORS middleware (if needed)
 app.use((req, res, next) => {
@@ -25,6 +26,6 @@ app.use((req, res, next) => {
 app.use('/v1', appRouter);
 
 app.listen(env.PORT, () => {
-  console.log(`Server is running on http://localhost:${env.PORT}`);
+  logger.info(`Server is running on http://localhost:${env.PORT}`);
 });
 

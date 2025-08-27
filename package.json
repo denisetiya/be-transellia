@@ -11,8 +11,8 @@
   },
   "scripts": {
     "dev": "pnpm tsx --watch src/app.ts",
-    "start": "pnpm tsx src/index.ts",
-    "start:prod": "bun dist/index.js",
+    "start": "pnpm tsx src/app.ts",
+    "start:prod": "pnpm dist/src/app.js",
     "build": "pnpm compile",
     "type-check": "pnpm tsc --noEmit",
     "type-check:watch": "pnpm tsc --noEmit --watch",
@@ -22,9 +22,7 @@
     "db:generate": "pnpm prisma generate",
     "db:push": "pnpm prisma db push",
     "db:migrate": "pnpm prisma migrate dev",
-    "db:studio": "pnpm prisma studio",
-    "add": "pnpm add",
-    "remove": "pnpm remove"
+    "db:studio": "pnpm prisma studio"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
