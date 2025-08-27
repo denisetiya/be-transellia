@@ -13,7 +13,7 @@
     "dev": "pnpm tsx --watch src/app.ts",
     "start": "node dist/app.js",
     "start:prod": "node dist/app.js",
-    "build": "pnpm db:generate && pnpm tsc --project tsconfig.prod.json",
+    "build": "pnpm run lint && tsc",
     "postinstall": "pnpm db:generate",
     "type-check": "pnpm tsc --noEmit",
     "type-check:watch": "pnpm tsc --noEmit --watch",
