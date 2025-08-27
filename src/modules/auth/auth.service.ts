@@ -10,11 +10,23 @@ import type { AuthLoginResult, AuthRegisterResult } from "./auth.type";
 
 export default class AuthService {
     
-    static salt = Hash.generateSalt();
+    private static generateSaltFromEmail(email: string): string {
+        // Generate a consistent salt based on email
+        // This ensures the same salt is always used for the same user
+        return Hash.hash(email, 'TRANSELLIA_SALT_SEED_2024').substring(0, 16);
+    }
 
-
-    private static generateToken(userData: iUser)  {
-        return Jwt.sign({ ...userData }, env.JWT_SECRET, { expiresIn: 86400 });
+    private static generateToken(userData: iUser): string | null {
+        try {
+            if (!env.JWT_SECRET) {
+                logger.error('JWT_SECRET is not defined in environment variables');
+                throw new Error('JWT_SECRET is not configured');
+            }
+            return Jwt.sign({ ...userData }, env.JWT_SECRET, { expiresIn: 86400 });
+        } catch (error) {
+            logger.error(`Token generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            return null;
+        }
     }
 
     static async login(data: iLogin): Promise<AuthLoginResult> {
@@ -51,8 +63,9 @@ export default class AuthService {
                 return AuthErrorHandler.errors.invalidCredentials(data.email);
             }
 
-            // Verify password
-            const isPasswordValid = Hash.verifyPassword(data.password, user.password, this.salt);
+            // Verify password using the same deterministic salt
+            const salt = this.generateSaltFromEmail(data.email);
+            const isPasswordValid = Hash.verifyPassword(data.password, user.password, salt);
             
             if (!isPasswordValid) {
                 logger.warn(`Invalid password attempt - Email: ${data.email}, UserID: ${user.id}`);
@@ -106,8 +119,9 @@ export default class AuthService {
                 return AuthErrorHandler.errors.emailAlreadyExists(data.email);
             }
 
-            // Hash password
-            const hashedPassword = Hash.hash(data.password, this.salt);
+            // Hash password with deterministic salt based on email
+            const salt = this.generateSaltFromEmail(data.email);
+            const hashedPassword = Hash.hash(data.password, salt);
             
 
             // Create user with transaction for data consistency
@@ -142,7 +156,13 @@ export default class AuthService {
             // Generate token
             const token = this.generateToken(newUser);
             
-            logger.info(`User registration successful - UserID: ${newUser.id}, Email: ${newUser.email}`);
+            if (!token) {
+                logger.error(`Token generation failed for user registration - UserID: ${newUser.id}, Email: ${newUser.email}`);
+                // Still return success but with warning about token
+                logger.warn(`User registration successful but token generation failed - UserID: ${newUser.id}`);
+            } else {
+                logger.info(`User registration successful - UserID: ${newUser.id}, Email: ${newUser.email}`);
+            }
 
             return {
                 data: {
@@ -154,7 +174,7 @@ export default class AuthService {
                     UserDetails: newUser.UserDetails,
                     isEmployee: newUser.isEmployee
                 },
-                message: "Registrasi berhasil",
+                message: token ? "Registrasi berhasil" : "Registrasi berhasil, namun gagal membuat token. Silakan login kembali.",
                 token: token,
                 success: true
             };

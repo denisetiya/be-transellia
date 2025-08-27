@@ -10,8 +10,8 @@
     "email": "denisetiya009@gmail.com"
   },
   "scripts": {
-    "dev": "pnpm tsx --watch index.ts",
-    "start": "pnpm tsx index.ts",
+    "dev": "pnpm tsx --watch src/app.ts",
+    "start": "pnpm tsx src/index.ts",
     "start:prod": "bun dist/index.js",
     "build": "pnpm compile",
     "type-check": "pnpm tsc --noEmit",

@@ -71,7 +71,7 @@ export interface AuthRegisterSuccess {
         } | null;
     };
     message: string;
-    token: string;
+    token: string | null;
     success: true;
 }
 

@@ -4,24 +4,41 @@ import { loginSchema, registerSchema, type iLogin } from './auth.validation';
 import response from '../../lib/lib.response';
 import AuthService from './auth.service';
 import AuthErrorHandler from './auth.error';
+import { createValidationErrorResponse } from '../../lib/lib.validation';
 
 export default class AuthController {
 
     static async login(req: Request, res: Response) {
         try {
             logger.info('User login attempt');
+            
+            // Debug logging for request body
+            logger.info(`Request body:, ${req.body}`);
+            
             const data: iLogin = req.body;
+
+            // Additional check for empty body
+            if (!data || typeof data !== 'object') {
+                logger.warn('Request body is empty or invalid type');
+                return response.badRequest(
+                    res,
+                    'Request body harus berupa object JSON yang valid',
+                    [{
+                        field: 'root',
+                        message: 'Request body tidak boleh kosong. Pastikan mengirim data dalam format JSON yang benar.',
+                        code: 'missing_body'
+                    }]
+                );
+            }
 
             const validation = loginSchema.safeParse(data);
             if (!validation.success) {
                 logger.warn(`User login failed validation - Email: ${data?.email || 'unknown'}`);
+                const validationError = createValidationErrorResponse(validation.error);
                 return response.badRequest(
                     res,
-                    'Data login tidak valid',
-                    validation.error.issues.map(issue => ({
-                        field: issue.path.join('.'),
-                        message: issue.message
-                    }))
+                    validationError.message,
+                    validationError.errors
                 );
             }
 
@@ -33,9 +50,11 @@ export default class AuthController {
                     res,
                     {
                         user: loginResult.data,
-                        token: 'token' in loginResult ? loginResult.token : null
                     },
-                    loginResult.message
+                    loginResult.message,
+                    {
+                        token: 'token' in loginResult ? loginResult.token : null
+                    }
                 );
             }
 
@@ -53,18 +72,34 @@ export default class AuthController {
     static async register(req: Request, res: Response) {
         try {
             logger.info('User registration attempt');
+            
+            // Debug logging for request body
+            logger.info(`Request body:', ${req.body}`);
+            
             const data = req.body;
+
+            // Additional check for empty body
+            if (!data || typeof data !== 'object') {
+                logger.warn('Request body is empty or invalid type');
+                return response.badRequest(
+                    res,
+                    'Request body harus berupa object JSON yang valid',
+                    [{
+                        field: 'root',
+                        message: 'Request body tidak boleh kosong. Pastikan mengirim data dalam format JSON yang benar.',
+                        code: 'missing_body'
+                    }]
+                );
+            }
 
             const validation = registerSchema.safeParse(data);
             if (!validation.success) {
                 logger.warn(`User registration failed validation - Email: ${data?.email || 'unknown'}`);
+                const validationError = createValidationErrorResponse(validation.error);
                 return response.badRequest(
                     res,
-                    'Data registrasi tidak valid',
-                    validation.error.issues.map(issue => ({
-                        field: issue.path.join('.'),
-                        message: issue.message
-                    }))
+                    validationError.message,
+                    validationError.errors
                 );
             }
 
@@ -76,6 +111,8 @@ export default class AuthController {
                     res,
                     {
                         user: registerResult.data,
+                    },
+                    {
                         token: 'token' in registerResult ? registerResult.token : null
                     }
                 );

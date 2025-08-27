@@ -32,12 +32,12 @@ export default class response {
     static badRequest(
         res: Response, 
         message: string = "Error",
-        errorDetail: Record<string, unknown> | Record<string, unknown>[] | string | null = null, 
+        errors: Record<string, unknown> | Record<string, unknown>[] | string | null = null, 
         meta: Record<string, unknown> | null = null) {
         res.status(400).json({
             success: false,
             message,
-            errorDetail: errorDetail,
+            errors: errors,
             meta
         });
     }
