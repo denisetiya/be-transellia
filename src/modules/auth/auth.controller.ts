@@ -1,4 +1,4 @@
-import type {Request, Response} from 'express';
+import type { Request, Response } from 'express';
 import logger from '../../lib/lib.logger';
 import { loginSchema, registerSchema, type iLogin } from './auth.validation';
 import response from '../../lib/lib.response';

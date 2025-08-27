@@ -11,9 +11,10 @@
   },
   "scripts": {
     "dev": "pnpm tsx --watch src/app.ts",
-    "start": "pnpm tsx src/app.ts",
-    "start:prod": "pnpm dist/src/app.js",
-    "build": "pnpm compile",
+    "start": "node dist/app.js",
+    "start:prod": "node dist/app.js",
+    "build": "pnpm db:generate && pnpm tsc --project tsconfig.prod.json",
+    "postinstall": "pnpm db:generate",
     "type-check": "pnpm tsc --noEmit",
     "type-check:watch": "pnpm tsc --noEmit --watch",
     "compile": "pnpm tsc",

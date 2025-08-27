@@ -1,19 +1,24 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "src/app.ts",
-        "use": "@vercel/node",
-        "config": {
-          "maxDuration": 10
-        }
+  "version": 2,
+  "builds": [
+    {
+      "src": "dist/app.js",
+      "use": "@vercel/node",
+      "config": {
+        "maxDuration": 30
       }
-    ],
-    "routes": [
-      {
-        "src": "/(.*)",
-        "dest": "src/app.ts"
-      }
-    ]
-  }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dist/app.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm build"
+}
   
