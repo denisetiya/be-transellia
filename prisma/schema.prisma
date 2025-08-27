@@ -48,7 +48,7 @@ model UserDetails {
   imageProfile String?
   phoneNumber String?
   address String?
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -68,9 +68,9 @@ model Store {
 model Employee {
   id String @id @default(cuid())
   userId String @unique
-  User User @relation(fields: [userId], references: [id])
+  User User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   StoreId String
-  Store Store @relation(fields: [StoreId], references: [id])
+  Store Store @relation(fields: [StoreId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -81,7 +81,7 @@ model Product {
   description String?
   price Float
   StoreId String
-  Store Store @relation(fields: [StoreId], references: [id])
+  Store Store @relation(fields: [StoreId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   HistorySales HistorySale[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -94,7 +94,7 @@ model HistorySale {
   totalProduct Float
   paymentMethod String?
   totalPrice Float
-  Product Product @relation(fields: [productId], references: [id])
+  Product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
