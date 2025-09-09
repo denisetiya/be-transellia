@@ -25,13 +25,13 @@ model User {
   isEmployee Boolean? @default(false)
   OwnerAt  Store?
   subscriptionId  String?
-  subscription SubscriptionProduct? @relation(fields: [subscriptionId], references: [id])
+  subscription SubscriptionList? @relation(fields: [subscriptionId], references: [id])
   EmployeeDetail Employee?
   UserDetails UserDetails?
 }
   
 
-model SubscriptionProduct {
+model SubscriptionList {
   id String @id @default(cuid())
   name String
   price Float
@@ -41,6 +41,8 @@ model SubscriptionProduct {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+
 model UserDetails {
   id String @id @default(cuid())
   userId String @unique
@@ -72,6 +74,7 @@ model Employee {
   StoreId String
   Store Store @relation(fields: [StoreId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   createdAt DateTime @default(now())
+  attendance Attendance[]
   updatedAt DateTime @updatedAt
 }
 
@@ -95,6 +98,17 @@ model HistorySale {
   paymentMethod String?
   totalPrice Float
   Product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Attendance {
+  id String @id @default(cuid())
+  employeeId String
+  date DateTime
+  status String
+  image String?
+  Employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

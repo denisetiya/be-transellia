@@ -2,6 +2,7 @@ import express, { type Application, type Request, type Response, type NextFuncti
 import appRouter from './app.routes';
 import env from './config/env.config';
 import logger from './lib/lib.logger';
+import GlobalErrorHandler from './lib/lib.error.handler';
 
 const app: Application = express();
 
@@ -35,8 +36,9 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
-// Export app for Vercel
-export default app;
+// Global error handling middleware
+// This should be the last middleware registered
+app.use(GlobalErrorHandler.expressErrorHandler);
 
 // Start server only if not in Vercel environment
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
@@ -44,4 +46,5 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
     logger.info(`Server is running on http://localhost:${env.PORT}`);
   });
 }
-
+// Export app for Vercel
+export default app;

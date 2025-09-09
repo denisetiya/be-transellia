@@ -1,12 +1,13 @@
 import type { Response } from 'express';
 import logger from '../../lib/lib.logger';
-import response from '../../lib/lib.response';
+import GlobalErrorHandler from '../../lib/lib.error.handler';
 import { type AuthError, AuthErrorType } from './auth.type';
 
 
 /**
  * Auth Error Handler Class
  * Centralized error handling for authentication operations
+ * @deprecated Use GlobalErrorHandler instead
  */
 export default class AuthErrorHandler {
 
@@ -98,37 +99,39 @@ export default class AuthErrorHandler {
         
         logger.warn(`Controller handling service error - Email: ${email}, Type: ${errorType}, Message: ${message}`);
         
+        // Map AuthErrorType to GlobalErrorType
+        let globalErrorType: any;
         switch (errorType) {
             case AuthErrorType.INVALID_CREDENTIALS:
             case AuthErrorType.USER_NOT_FOUND:
-                response.unauthorized(res, message);
+                globalErrorType = GlobalErrorHandler.errors.unauthorized(message);
                 break;
             
             case AuthErrorType.CONFLICT:
             case AuthErrorType.EMAIL_ALREADY_EXISTS:
-                response.conflict(res, message);
+                globalErrorType = GlobalErrorHandler.errors.conflict(message);
                 break;
             
             case AuthErrorType.DATABASE_CONNECTION:
             case AuthErrorType.TIMEOUT:
             case AuthErrorType.INTERNAL_ERROR:
-                response.internalServerError(res, message);
+                globalErrorType = GlobalErrorHandler.errors.internal(message);
                 break;
             
             case AuthErrorType.FOREIGN_KEY_ERROR:
             case AuthErrorType.VALIDATION_ERROR:
-                response.badRequest(res, message);
+                globalErrorType = GlobalErrorHandler.errors.validation(message);
                 break;
             
             default:
                 // Fallback for unknown error types
                 logger.error(`Unknown service error type: ${errorType} - Email: ${email}`);
-                response.internalServerError(
-                    res, 
-                    'Terjadi kesalahan sistem. Silakan coba lagi.'
-                );
+                globalErrorType = GlobalErrorHandler.errors.internal('Terjadi kesalahan sistem. Silakan coba lagi.');
                 break;
         }
+        
+        // Use GlobalErrorHandler to send HTTP response
+        GlobalErrorHandler.handleHTTPError(res, globalErrorType);
     }
 
     /**
@@ -141,14 +144,7 @@ export default class AuthErrorHandler {
         operation: 'login' | 'registration', 
         email: string
     ): void {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        logger.error(`Unexpected error during ${operation} - Error: ${errorMessage}, Email: ${email}`);
-        
-        response.internalServerError(
-            res,
-            'Terjadi kesalahan sistem. Silakan coba lagi.',
-            process.env.NODE_ENV === 'development' ? errorMessage : null
-        );
+        GlobalErrorHandler.handleException(res, error, `${operation} operation for ${email}`);
     }
 
     /**
