@@ -4,35 +4,35 @@ import type { Response } from "express";
 export default class response {
 
     static created(
-        res: Response, 
-        data: Record<string, unknown> | Record<string, unknown>[] | null, 
+        res: Response,
+        content: Record<string, unknown> | Record<string, unknown>[] | null,
         meta: Record<string, unknown> | null = null
     ) {
         res.status(201).json({
             success: true,
             message: "Created",
-            data,
+            content,
             meta
         });
     }
 
     static success(
-        res: Response, 
-        data: Record<string, unknown> | Record<string, unknown>[] | null, 
-        message: string = "Success", 
+        res: Response,
+        content: Record<string, unknown> | Record<string, unknown>[] | null,
+        message: string = "Success",
         meta: Record<string, unknown> | null = null) {
         res.status(200).json({
             success: true,
             message,
-            data,
+            content,
             meta
         });
     }
 
     static badRequest(
-        res: Response, 
+        res: Response,
         message: string = "Error",
-        errors: Record<string, unknown> | Record<string, unknown>[] | string | null = null, 
+        errors: Record<string, unknown> | Record<string, unknown>[] | string | null = null,
         meta: Record<string, unknown> | null = null) {
         res.status(400).json({
             success: false,
@@ -43,8 +43,8 @@ export default class response {
     }
 
     static notFound(
-        res: Response, 
-        message: string = "Not Found", 
+        res: Response,
+        message: string = "Not Found",
         meta: Record<string, unknown> | null = null) {
         res.status(404).json({
             success: false,
@@ -54,7 +54,7 @@ export default class response {
     }
 
     static internalServerError(
-        res: Response, 
+        res: Response,
         message: string = "Internal Server Error",
         errorDetail: Record<string, unknown> | Record<string, unknown>[] | string | null = null,
         meta: Record<string, unknown> | null = null) {
@@ -67,8 +67,8 @@ export default class response {
     }
 
     static unauthorized(
-        res: Response, 
-        message: string = "Unauthorized", 
+        res: Response,
+        message: string = "Unauthorized",
         meta: Record<string, unknown> | null = null) {
         res.status(401).json({
             success: false,
@@ -78,8 +78,8 @@ export default class response {
     }
 
     static forbidden(
-        res: Response, 
-        message: string = "Forbidden", 
+        res: Response,
+        message: string = "Forbidden",
         meta: Record<string, unknown> | null = null) {
         res.status(403).json({
             success: false,
@@ -89,8 +89,8 @@ export default class response {
     }
 
     static conflict(
-        res: Response, 
-        message: string = "Conflict", 
+        res: Response,
+        message: string = "Conflict",
         meta: Record<string, unknown> | null = null) {
         res.status(409).json({
             success: false,

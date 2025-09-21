@@ -24,7 +24,8 @@ export default class UsersService {
                     skip,
                     take: limit,
                     include: {
-                        UserDetails: true
+                        UserDetails: true,
+                        subscription: true,
                     }
                 }),
                 prisma.user.count()
@@ -58,6 +59,40 @@ export default class UsersService {
             
         } catch (error) {
             return UsersErrorHandler.handleDatabaseError(error, 'fetch all users');
+        } finally {
+            await prisma.$disconnect();
+        }
+    }
+    
+    /**
+     * Update a user's subscription
+     * @param userId - The ID of the user to update
+     * @param subscriptionId - The ID of the subscription to assign to the user
+     * @returns boolean indicating success or failure
+     */
+    static async updateUserSubscription(userId: string, subscriptionId: string): Promise<boolean> {
+        try {
+            logger.info(`Attempting to update user subscription - User ID: ${userId}, Subscription ID: ${subscriptionId}`);
+            
+            // Check database connection
+            await prisma.$connect();
+            
+            // Update user's subscription
+            await prisma.user.update({
+                where: {
+                    id: userId
+                },
+                data: {
+                    subscriptionId: subscriptionId
+                }
+            });
+            
+            logger.info(`Successfully updated user subscription - User ID: ${userId}, Subscription ID: ${subscriptionId}`);
+            return true;
+            
+        } catch (error) {
+            logger.error(`Failed to update user subscription - User ID: ${userId}, Subscription ID: ${subscriptionId}, Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            return false;
         } finally {
             await prisma.$disconnect();
         }
