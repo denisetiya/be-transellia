@@ -10,6 +10,48 @@ This module handles user management and operations within the application.
 
 ## API Endpoints
 
+### Public Routes (Authenticated Users)
+
+#### Get Current User Profile
+```
+GET /users/me
+```
+Retrieve the authenticated user's profile information based on the JWT token.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Berhasil mendapatkan profil pengguna",
+  "data": {
+    "user": {
+      "id": "string",
+      "email": "string",
+      "role": "string",
+      "subscriptionId": "string",
+      "subscription": {
+        "id": "string",
+        "name": "string",
+        "price": "number",
+        "description": "string",
+        "features": ["string"],
+        "createdAt": "date",
+        "updatedAt": "date"
+      },
+      "UserDetails": {
+        "name": "string",
+        "imageProfile": "string",
+        "phoneNumber": "string",
+        "address": "string"
+      },
+      "isEmployee": "boolean",
+      "createdAt": "date",
+      "updatedAt": "date"
+    }
+  }
+}
+```
+
 ### Admin Routes
 
 #### Get All Users

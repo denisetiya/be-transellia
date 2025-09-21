@@ -64,4 +64,51 @@ export default class UsersController {
             );
         }
     }
+    
+    /**
+     * Get current user's profile information
+     * This endpoint returns the authenticated user's details based on the JWT token
+     */
+    static async getMyProfile(req: Request, res: Response) {
+        try {
+            logger.info('Fetching current user profile');
+            
+            // Get user ID from JWT token
+            const userId = req.user?.id;
+            if (!userId) {
+                return response.unauthorized(
+                    res,
+                    "User ID not found in token"
+                );
+            }
+            
+            // Get user details
+            const user = await UsersService.getUserById(userId);
+            
+            if (!user) {
+                logger.warn(`User not found - User ID: ${userId}`);
+                return response.notFound(
+                    res,
+                    "User not found"
+                );
+            }
+            
+            logger.info(`Successfully fetched user profile - User ID: ${userId}`);
+            return response.success(
+                res,
+                {
+                    user: user
+                },
+                "Berhasil mendapatkan profil pengguna"
+            );
+            
+        } catch (error) {
+            // Handle unexpected exceptions
+            logger.error(`Unexpected error in getMyProfile: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            return response.internalServerError(
+                res,
+                "Terjadi kesalahan sistem. Silakan coba lagi."
+            );
+        }
+    }
 }

@@ -9,5 +9,6 @@ usersRouter.use(jwtMiddleware);
 
 // Users routes
 usersRouter.get('/', UsersController.getAllUsers);
+usersRouter.get('/me', UsersController.getMyProfile);
 
 export default usersRouter;
