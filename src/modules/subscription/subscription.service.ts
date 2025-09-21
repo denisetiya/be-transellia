@@ -3,6 +3,9 @@ import logger from "../../lib/lib.logger";
 import { iCreateSubscription, iUpdateSubscription, iSubscriptionId } from "./subscription.validation";
 import SubscriptionErrorHandler from "./subscription.error";
 import { SubscriptionResult, SubscriptionsResult, UsersBySubscriptionResult } from "./subscription.type";
+import PaymentService from '../payment/payment.service';
+import UsersService from '../users/users.service';
+import PaymentHistoryService from '../payment-history/payment-history.service';
 
 export default class SubscriptionService {
     
@@ -288,6 +291,145 @@ export default class SubscriptionService {
             
         } catch (error) {
             return SubscriptionErrorHandler.handleDatabaseError(error, `fetch users by subscription ID: ${subscriptionId}`);
+        } finally {
+            await prisma.$disconnect();
+        }
+    }
+    
+    /**
+     * Process subscription payment and update user subscription on success
+     * @param userId - The ID of the user making the payment
+     * @param subscriptionId - The ID of the subscription being purchased
+     * @returns PaymentResult with success or error information
+     */
+    static async processSubscriptionPayment(
+        userId: string,
+        subscriptionId: string,
+        paymentMethod: 'va' | 'qr' | 'wallet',
+        bank?: string,
+        walletProvider?: string
+    ): Promise<any> {
+        try {
+            logger.info(`Processing subscription payment - User ID: ${userId}, Subscription ID: ${subscriptionId}`);
+            
+            // Check database connection
+            await prisma.$connect();
+            
+            // Check if subscription exists
+            const subscription = await prisma.subscriptionList.findUnique({
+                where: {
+                    id: subscriptionId
+                }
+            });
+            
+            if (!subscription) {
+                logger.warn(`Subscription not found - ID: ${subscriptionId}`);
+                return SubscriptionErrorHandler.errors.notFound(subscriptionId);
+            }
+            
+            // Get user details
+            const user = await prisma.user.findUnique({
+                where: {
+                    id: userId
+                },
+                include: {
+                    UserDetails: true
+                }
+            });
+            
+            if (!user) {
+                logger.warn(`User not found - ID: ${userId}`);
+                return SubscriptionErrorHandler.handleDatabaseError(new Error('User not found'), 'find user');
+            }
+            
+            // Create payment request
+            const paymentRequest = {
+                orderId: `SUB_${subscriptionId}_${userId}_${Date.now()}`,
+                amount: subscription.price,
+                currency: 'IDR',
+                customer: {
+                    id: userId,
+                    email: user.email,
+                    firstName: user.UserDetails?.name || '',
+                    lastName: '',
+                    phone: user.UserDetails?.phoneNumber || ''
+                },
+                paymentMethod,
+                bank,
+                walletProvider
+            };
+            
+            // Process payment using PaymentService
+            const paymentResult = await PaymentService.createPayment(paymentRequest);
+            
+            // Create payment history record
+            const paymentHistoryData = {
+                userId: userId,
+                subscriptionId: subscriptionId,
+                orderId: paymentRequest.orderId,
+                paymentId: paymentResult.data?.paymentId || null,
+                amount: subscription.price,
+                currency: paymentRequest.currency,
+                paymentMethod: paymentRequest.paymentMethod,
+                status: paymentResult.success ? 'pending' : 'failed',
+                transactionTime: new Date(),
+                expiryTime: paymentResult.data?.expiryTime ? new Date(paymentResult.data.expiryTime) : null,
+                vaNumber: paymentResult.data?.vaNumber || null,
+                bank: paymentRequest.bank || null,
+                qrCode: paymentResult.data?.qrCode || null,
+                redirectUrl: paymentResult.data?.redirectUrl || null
+            };
+            
+            const paymentHistoryResult = await PaymentHistoryService.createPaymentHistory(paymentHistoryData);
+            
+            if (!paymentHistoryResult.success) {
+                logger.error(`Failed to create payment history record: ${paymentHistoryResult.message}`);
+                // Continue with payment processing even if history creation fails
+            }
+            
+            if (paymentResult.success) {
+                logger.info(`Payment processed successfully for order ${paymentRequest.orderId}`);
+                
+                // Update user's subscription
+                const userUpdated = await UsersService.updateUserSubscription(userId, subscriptionId);
+                
+                if (userUpdated) {
+                    logger.info(`Successfully updated user subscription - User ID: ${userId}, Subscription ID: ${subscriptionId}`);
+                    
+                    // Update payment history status to success
+                    await PaymentHistoryService.updatePaymentHistoryStatus(paymentRequest.orderId, 'success', paymentResult.data?.paymentId || undefined);
+                    
+                    return {
+                        data: {
+                            orderId: paymentResult.data?.orderId,
+                            paymentId: paymentResult.data?.paymentId,
+                            subscriptionId: subscription.id,
+                            subscriptionName: subscription.name,
+                            amount: subscription.price,
+                            redirectUrl: paymentResult.data?.redirectUrl,
+                            qrCode: paymentResult.data?.qrCode,
+                            vaNumber: paymentResult.data?.vaNumber,
+                            expiryTime: paymentResult.data?.expiryTime
+                        },
+                        message: "Subscription payment successful and subscription updated",
+                        success: true
+                    };
+                } else {
+                    logger.error(`Failed to update user subscription - User ID: ${userId}, Subscription ID: ${subscriptionId}`);
+                    return SubscriptionErrorHandler.handleDatabaseError(new Error('Failed to update user subscription'), 'update user subscription');
+                }
+            } else {
+                // Payment failed
+                logger.error(`Payment failed for order ${paymentRequest.orderId}: ${paymentResult.message}`);
+                
+                // Update payment history status to failed
+                await PaymentHistoryService.updatePaymentHistoryStatus(paymentRequest.orderId, 'failed');
+                
+                return paymentResult;
+            }
+            
+        } catch (error) {
+            return SubscriptionErrorHandler.handleDatabaseError(error, 'process subscription payment');
         } finally {
             await prisma.$disconnect();
         }

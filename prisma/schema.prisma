@@ -28,6 +28,7 @@ model User {
   subscription SubscriptionList? @relation(fields: [subscriptionId], references: [id])
   EmployeeDetail Employee?
   UserDetails UserDetails?
+  paymentHistories PaymentHistory[]
 }
   
 
@@ -40,6 +41,7 @@ model SubscriptionList {
   users User[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  paymentHistories PaymentHistory[]
 }
 
 
@@ -109,6 +111,28 @@ model Attendance {
   status String
   image String?
   Employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PaymentHistory {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  subscriptionId String
+  subscription SubscriptionList @relation(fields: [subscriptionId], references: [id])
+  orderId String @unique
+  paymentId String?
+  amount Float
+  currency String
+  paymentMethod String
+  status String
+  transactionTime DateTime?
+  expiryTime DateTime?
+  vaNumber String?
+  bank String?
+  qrCode String?
+  redirectUrl String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
