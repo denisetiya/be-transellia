@@ -14,7 +14,7 @@ export default class PaymentHistoryErrorHandler {
     }
   };
 
-  static handleDatabaseError(error: any, operation: string): PaymentHistoryError {
+  static handleDatabaseError(error: unknown, operation: string): PaymentHistoryError {
     logger.error(`Database error during ${operation}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     
     if (error instanceof Error && error.message.includes('Connection')) {

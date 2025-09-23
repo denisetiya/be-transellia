@@ -1,6 +1,4 @@
-import type { Response } from 'express';
 import logger from '../../lib/lib.logger';
-import GlobalErrorHandler from '../../lib/lib.error.handler';
 import { type SubscriptionError, SubscriptionErrorType } from './subscription.type';
 
 export default class SubscriptionErrorHandler {

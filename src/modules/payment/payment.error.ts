@@ -12,7 +12,7 @@ export default class PaymentErrorHandler {
     };
   }
 
-  static handleMidtransError(error: any, operation: string): PaymentError {
+  static handleMidtransError(error: unknown, operation: string): PaymentError {
     logger.error(`Midtrans error during ${operation}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return {
       data: null,
@@ -22,7 +22,7 @@ export default class PaymentErrorHandler {
     };
   }
 
-  static handleDatabaseError(error: any, operation: string): PaymentError {
+  static handleDatabaseError(error: unknown, operation: string): PaymentError {
     logger.error(`Database error during ${operation}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return {
       data: null,
@@ -32,7 +32,7 @@ export default class PaymentErrorHandler {
     };
   }
 
-  static handleInternalError(error: any, operation: string): PaymentError {
+  static handleInternalError(error: unknown, operation: string): PaymentError {
     logger.error(`Internal error during ${operation}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return {
       data: null,
