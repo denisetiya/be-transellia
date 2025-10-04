@@ -4,8 +4,16 @@ export interface iSubscription {
     id: string;
     name: string;
     price: number;
+    currency: string;
     description: string | null;
+    duration: {
+        value: number;
+        unit: string;
+    };
     features: string[];
+    status: string;
+    subscribersCount?: number;
+    totalRevenue?: number;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -32,15 +40,17 @@ export interface SubscriptionSuccess {
 }
 
 export interface SubscriptionsSuccess {
-    data: iSubscription[];
+    data: {
+        subscriptions: iSubscription[];
+        pagination: {
+            currentPage: number;
+            totalPages: number;
+            totalItems: number;
+            itemsPerPage: number;
+        };
+    };
     message: string;
     success: true;
-    meta?: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-    };
 }
 
 export interface UsersBySubscriptionSuccess {

@@ -43,14 +43,11 @@ export default class SubscriptionController {
             const result = await SubscriptionService.getAllSubscriptions(page, limit);
             
             if (result.success) {
-                logger.info(`Successfully fetched ${result.data.length} subscriptions (Page: ${page}, Limit: ${limit})`);
+                logger.info(`Successfully fetched ${result.data.subscriptions.length} subscriptions (Page: ${page}, Limit: ${limit})`);
                 return response.success(
                     res,
-                    {
-                        subscriptions: result.data,
-                    },
-                    result.message,
-                    result.meta
+                    result.data,
+                    result.message
                 );
             }
             

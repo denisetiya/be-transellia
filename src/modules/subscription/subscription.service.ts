@@ -37,23 +37,33 @@ export default class SubscriptionService {
             logger.info(`Successfully fetched ${subscriptions.length} subscriptions (Page: ${page}, Limit: ${limit}, Total: ${total})`);
             
             return {
-                data: subscriptions.map(sub => ({
-                    id: sub.id,
-                    name: sub.name,
-                    price: sub.price,
-                    description: sub.description,
-                    features: sub.features,
-                    createdAt: sub.createdAt,
-                    updatedAt: sub.updatedAt
-                })),
+                data: {
+                    subscriptions: subscriptions.map(sub => ({
+                        id: sub.id,
+                        name: sub.name,
+                        price: sub.price,
+                        currency: sub.currency,
+                        description: sub.description,
+                        duration: {
+                            value: sub.durationValue,
+                            unit: sub.durationUnit
+                        },
+                        features: sub.features,
+                        status: sub.status,
+                        subscribersCount: sub.subscribersCount,
+                        totalRevenue: sub.totalRevenue,
+                        createdAt: sub.createdAt,
+                        updatedAt: sub.updatedAt
+                    })),
+                    pagination: {
+                        currentPage: page,
+                        totalPages,
+                        totalItems: total,
+                        itemsPerPage: limit
+                    }
+                },
                 message: "Berhasil mendapatkan daftar subscription",
-                success: true,
-                meta: {
-                    page,
-                    limit,
-                    total,
-                    totalPages
-                }
+                success: true
             };
             
         } catch (error) {
@@ -88,8 +98,16 @@ export default class SubscriptionService {
                     id: subscription.id,
                     name: subscription.name,
                     price: subscription.price,
+                    currency: subscription.currency,
                     description: subscription.description,
+                    duration: {
+                        value: subscription.durationValue,
+                        unit: subscription.durationUnit
+                    },
                     features: subscription.features,
+                    status: subscription.status,
+                    subscribersCount: subscription.subscribersCount,
+                    totalRevenue: subscription.totalRevenue,
                     createdAt: subscription.createdAt,
                     updatedAt: subscription.updatedAt
                 },
@@ -115,8 +133,12 @@ export default class SubscriptionService {
                 data: {
                     name: data.name,
                     price: data.price,
+                    currency: data.currency || 'IDR',
                     description: data.description,
-                    features: data.features
+                    durationValue: data.duration?.value || 1,
+                    durationUnit: data.duration?.unit || 'months',
+                    features: data.features,
+                    status: data.status || 'active'
                 }
             });
             
@@ -127,8 +149,16 @@ export default class SubscriptionService {
                     id: subscription.id,
                     name: subscription.name,
                     price: subscription.price,
+                    currency: subscription.currency,
                     description: subscription.description,
+                    duration: {
+                        value: subscription.durationValue,
+                        unit: subscription.durationUnit
+                    },
                     features: subscription.features,
+                    status: subscription.status,
+                    subscribersCount: subscription.subscribersCount,
+                    totalRevenue: subscription.totalRevenue,
                     createdAt: subscription.createdAt,
                     updatedAt: subscription.updatedAt
                 },
@@ -169,8 +199,12 @@ export default class SubscriptionService {
                 data: {
                     name: data.name,
                     price: data.price,
+                    currency: data.currency,
                     description: data.description,
-                    features: data.features
+                    durationValue: data.duration?.value,
+                    durationUnit: data.duration?.unit,
+                    features: data.features,
+                    status: data.status
                 }
             });
             
@@ -181,8 +215,16 @@ export default class SubscriptionService {
                     id: subscription.id,
                     name: subscription.name,
                     price: subscription.price,
+                    currency: subscription.currency,
                     description: subscription.description,
+                    duration: {
+                        value: subscription.durationValue,
+                        unit: subscription.durationUnit
+                    },
                     features: subscription.features,
+                    status: subscription.status,
+                    subscribersCount: subscription.subscribersCount,
+                    totalRevenue: subscription.totalRevenue,
                     createdAt: subscription.createdAt,
                     updatedAt: subscription.updatedAt
                 },
@@ -229,8 +271,16 @@ export default class SubscriptionService {
                     id: existingSubscription.id,
                     name: existingSubscription.name,
                     price: existingSubscription.price,
+                    currency: existingSubscription.currency,
                     description: existingSubscription.description,
+                    duration: {
+                        value: existingSubscription.durationValue,
+                        unit: existingSubscription.durationUnit
+                    },
                     features: existingSubscription.features,
+                    status: existingSubscription.status,
+                    subscribersCount: existingSubscription.subscribersCount,
+                    totalRevenue: existingSubscription.totalRevenue,
                     createdAt: existingSubscription.createdAt,
                     updatedAt: existingSubscription.updatedAt
                 },
