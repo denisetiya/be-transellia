@@ -2,7 +2,7 @@ import prisma from '../../config/prisma.config';
 import logger from "../../lib/lib.logger";
 import { iCreateSubscription, iUpdateSubscription, iSubscriptionId } from "./subscription.validation";
 import SubscriptionErrorHandler from "./subscription.error";
-import { SubscriptionResult, SubscriptionsResult, UsersBySubscriptionResult } from "./subscription.type";
+import { SubscriptionResult, SubscriptionsResult, UsersBySubscriptionResult, SubscriptionPaymentResult } from "./subscription.type";
 import PaymentService from '../payment/payment.service';
 import UsersService from '../users/users.service';
 import PaymentHistoryService from '../payment-history/payment-history.service';
@@ -308,7 +308,7 @@ export default class SubscriptionService {
         paymentMethod: 'va' | 'qr' | 'wallet',
         bank?: string,
         walletProvider?: string
-    ): Promise<any> {
+    ): Promise<SubscriptionPaymentResult> {
         try {
             logger.info(`Processing subscription payment - User ID: ${userId}, Subscription ID: ${subscriptionId}`);
             
@@ -324,7 +324,12 @@ export default class SubscriptionService {
             
             if (!subscription) {
                 logger.warn(`Subscription not found - ID: ${subscriptionId}`);
-                return SubscriptionErrorHandler.errors.notFound(subscriptionId);
+                return {
+                    data: null,
+                    message: `Subscription with ID ${subscriptionId} not found`,
+                    success: false,
+                    errorType: 'NOT_FOUND'
+                };
             }
             
             // Get user details
@@ -339,7 +344,12 @@ export default class SubscriptionService {
             
             if (!user) {
                 logger.warn(`User not found - ID: ${userId}`);
-                return SubscriptionErrorHandler.handleDatabaseError(new Error('User not found'), 'find user');
+                return {
+                    data: null,
+                    message: `User with ID ${userId} not found`,
+                    success: false,
+                    errorType: 'NOT_FOUND'
+                };
             }
             
             // Create payment request
@@ -416,7 +426,12 @@ export default class SubscriptionService {
                     };
                 } else {
                     logger.error(`Failed to update user subscription - User ID: ${userId}, Subscription ID: ${subscriptionId}`);
-                    return SubscriptionErrorHandler.handleDatabaseError(new Error('Failed to update user subscription'), 'update user subscription');
+                    return {
+                        data: null,
+                        message: 'Failed to update user subscription',
+                        success: false,
+                        errorType: 'INTERNAL_ERROR'
+                    };
                 }
             } else {
                 // Payment failed
@@ -429,7 +444,12 @@ export default class SubscriptionService {
             }
             
         } catch (error) {
-            return SubscriptionErrorHandler.handleDatabaseError(error, 'process subscription payment');
+            return {
+                data: null,
+                message: error instanceof Error ? error.message : 'Failed to process subscription payment',
+                success: false,
+                errorType: 'INTERNAL_ERROR'
+            };
         } finally {
             await prisma.$disconnect();
         }

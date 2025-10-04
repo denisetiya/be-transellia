@@ -444,6 +444,11 @@ export default class SubscriptionController {
                         res,
                         result.message
                     );
+                case 'VALIDATION_ERROR':
+                    return response.badRequest(
+                        res,
+                        result.message
+                    );
                 default:
                     return response.internalServerError(
                         res,
@@ -479,7 +484,8 @@ export default class SubscriptionController {
             let payload;
             try {
                 payload = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
-            } catch (error) {
+            } catch (error : unknown) {
+                console.error(error)
                 logger.error('Failed to parse webhook payload');
                 return res.status(400).send('Invalid JSON payload');
             }
