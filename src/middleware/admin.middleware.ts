@@ -1,7 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import logger from '../lib/lib.logger';
 import response from '../lib/lib.response';
-import type { iUser } from '../modules/auth/auth.type';
 
 export const adminMiddleware = (req: Request, res: Response, next: NextFunction): void => {
     try {

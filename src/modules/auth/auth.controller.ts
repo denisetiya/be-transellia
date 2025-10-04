@@ -46,6 +46,18 @@ export default class AuthController {
 
             if (loginResult.success) {
                 logger.info(`User login successful - UserID: ${loginResult.data?.id}, Email: ${data.email}`);
+                
+                // Set HTTP-only cookie for web clients
+                if (loginResult.token) {
+                    res.cookie('transellia_token', loginResult.token, {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production',
+                        sameSite: 'strict',
+                        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+                        path: '/'
+                    });
+                }
+                
                 return response.success(
                     res,
                     {
