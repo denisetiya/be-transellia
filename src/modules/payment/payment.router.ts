@@ -1,11 +1,11 @@
 import express, { type Router } from "express";
 import PaymentController from './payment.controller';
-import { jwtMiddleware } from '../../middleware';
+import { unifiedAuthMiddleware } from '../../middleware';
 
 const paymentRouter: Router = express.Router();
 
-// Apply JWT middleware to all routes in this router
-paymentRouter.use(jwtMiddleware);
+// Apply unified auth middleware to all routes in this router
+paymentRouter.use(unifiedAuthMiddleware);
 
 // Payment routes
 paymentRouter.post('/', PaymentController.createPayment);
