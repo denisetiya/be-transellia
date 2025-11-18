@@ -2,12 +2,12 @@ import type { Response } from 'express';
 import logger from '../../lib/lib.logger';
 import GlobalErrorHandler from '../../lib/lib.error.handler';
 import { type AuthError, AuthErrorType } from './auth.type';
+import type { GlobalError } from '../../types/global.error.type';
 
 
 /**
  * Auth Error Handler Class
  * Centralized error handling for authentication operations
- * @deprecated Use GlobalErrorHandler instead
  */
 export default class AuthErrorHandler {
 
@@ -100,7 +100,7 @@ export default class AuthErrorHandler {
         logger.warn(`Controller handling service error - Email: ${email}, Type: ${errorType}, Message: ${message}`);
         
         // Map AuthErrorType to GlobalErrorType
-        let globalErrorType: any;
+        let globalErrorType: GlobalError;
         switch (errorType) {
             case AuthErrorType.INVALID_CREDENTIALS:
             case AuthErrorType.USER_NOT_FOUND:

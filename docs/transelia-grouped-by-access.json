@@ -1,0 +1,2417 @@
+{
+  "apidogProject": "1.0.0",
+  "$schema": {
+    "app": "apidog",
+    "type": "project",
+    "version": "1.2.0"
+  },
+  "info": {
+    "name": "transelia - Grouped by Access Level",
+    "description": "API documentation for Transellia application - Grouped by Admin and User access",
+    "mockRule": {
+      "rules": [],
+      "enableSystemRule": true
+    }
+  },
+  "apiCollection": [
+    {
+      "name": "Admin APIs",
+      "id": 4711149,
+      "auth": {},
+      "securityScheme": {},
+      "parentId": 0,
+      "serverId": "",
+      "description": "API endpoints that can only be accessed by administrators",
+      "identityPattern": {
+        "httpApi": {
+          "type": "methodAndPath",
+          "bodyType": "",
+          "fields": []
+        }
+      },
+      "shareSettings": {},
+      "visibility": "SHARED",
+      "moduleId": 867727,
+      "preProcessors": [
+        {
+          "id": "inheritProcessors",
+          "type": "inheritProcessors",
+          "data": {}
+        }
+      ],
+      "postProcessors": [
+        {
+          "id": "inheritProcessors",
+          "type": "inheritProcessors",
+          "data": {}
+        }
+      ],
+      "inheritPostProcessors": {},
+      "inheritPreProcessors": {},
+      "items": [
+        {
+          "name": "Subscription Management",
+          "id": 4963855,
+          "auth": {},
+          "securityScheme": {},
+          "parentId": 0,
+          "serverId": "",
+          "description": "Admin-only subscription management endpoints",
+          "identityPattern": {
+            "httpApi": {
+              "type": "inherit",
+              "bodyType": "",
+              "fields": []
+            }
+          },
+          "shareSettings": {},
+          "visibility": "INHERITED",
+          "moduleId": 867727,
+          "preProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "postProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "inheritPostProcessors": {},
+          "inheritPreProcessors": {},
+          "items": [
+            {
+              "name": "Create Subscription",
+              "api": {
+                "id": "21746201",
+                "method": "post",
+                "path": "/v1/subscriptions",
+                "parameters": {
+                  "path": [],
+                  "query": [],
+                  "cookie": [],
+                  "header": [
+                    {
+                      "id": "kIN7Rf9zns",
+                      "name": "x-api-key",
+                      "required": false,
+                      "enable": true,
+                      "description": "API key for authentication",
+                      "example": "transakjhd182808766544$#@%$^^&*_-HAGFVDFGAWgvaf&^!@#$",
+                      "type": "string"
+                    },
+                    {
+                      "id": "L0IDQWmu58",
+                      "name": "Authorization",
+                      "required": true,
+                      "enable": true,
+                      "description": "Bearer token for authentication (Admin only)",
+                      "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "auth": {
+                  "type": "bearer"
+                },
+                "securityScheme": {},
+                "commonParameters": {
+                  "query": [],
+                  "body": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "responses": [
+                  {
+                    "id": "31956434",
+                    "code": 201,
+                    "name": "Created",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "subscription": {
+                              "type": "object",
+                              "x-apidog-orders": []
+                            }
+                          },
+                          "x-apidog-orders": [
+                            "subscription"
+                          ]
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message",
+                        "data"
+                      ]
+                    },
+                    "description": "Subscription created successfully",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "responseExamples": [
+                  {
+                    "name": "Success",
+                    "data": "{\r\n    \"success\": true,\r\n    \"message\": \"Subscription created successfully\",\r\n    \"data\": {\r\n        \"subscription\": {\r\n            \"id\": \"cmesn7has0000d5etmb7jw21s\",\r\n            \"name\": \"Premium Plan\",\r\n            \"price\": 29.99,\r\n            \"currency\": \"USD\",\r\n            \"features\": [\"Unlimited access\", \"Priority support\"]\r\n        }\r\n    }\r\n}",
+                    "responseId": "31956434",
+                    "description": "",
+                    "oasKey": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "requestBody": {
+                  "type": "application/json",
+                  "parameters": [],
+                  "jsonSchema": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 100,
+                        "description": "Nama subscription"
+                      },
+                      "price": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Harga subscription"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 3,
+                        "default": "USD",
+                        "description": "Mata uang (3 karakter)"
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "description": "Deskripsi subscription (opsional)"
+                      },
+                      "duration": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "number",
+                            "minimum": 1,
+                            "description": "Nilai durasi"
+                          },
+                          "unit": {
+                            "type": "string",
+                            "enum": [
+                              "days",
+                              "weeks",
+                              "months",
+                              "years"
+                            ],
+                            "description": "Unit durasi"
+                          }
+                        },
+                        "description": "Durasi subscription (opsional)",
+                        "x-apidog-orders": [
+                          "value",
+                          "unit"
+                        ]
+                      },
+                      "features": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "minItems": 1,
+                        "maxItems": 20,
+                        "description": "Daftar fitur subscription"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "inactive",
+                          "draft"
+                        ],
+                        "default": "active",
+                        "description": "Status subscription"
+                      }
+                    },
+                    "x-apidog-orders": [
+                      "name",
+                      "price",
+                      "currency",
+                      "description",
+                      "duration",
+                      "features",
+                      "status"
+                    ],
+                    "required": [
+                      "name",
+                      "price",
+                      "features"
+                    ]
+                  },
+                  "examples": [
+                    {
+                      "value": "{\n    \"name\": \"Premium Plan\",\n    \"price\": 29.99,\n    \"currency\": \"USD\",\n    \"description\": \"Monthly premium subscription with all features\",\n    \"duration\": {\n        \"value\": 1,\n        \"unit\": \"months\"\n    },\n    \"features\": [\"Unlimited access\", \"Priority support\", \"Advanced analytics\"]\n}",
+                      "mediaType": "application/json",
+                      "description": "Contoh request pembuatan subscription"
+                    }
+                  ],
+                  "mediaType": "",
+                  "oasExtensions": "",
+                  "required": false,
+                  "additionalContentTypes": []
+                },
+                "description": "Create a new subscription (Admin only)",
+                "tags": [],
+                "status": "developing",
+                "serverId": "",
+                "operationId": "",
+                "sourceUrl": "",
+                "ordering": 12,
+                "cases": [],
+                "mocks": [],
+                "customApiFields": "{}",
+                "advancedSettings": {
+                  "disabledSystemHeaders": {}
+                },
+                "mockScript": {},
+                "codeSamples": [],
+                "commonResponseStatus": {},
+                "responseChildren": [
+                  "BLANK.31956434",
+                  "BLANK.31958635"
+                ],
+                "visibility": "INHERITED",
+                "moduleId": 867727,
+                "oasExtensions": "",
+                "type": "http",
+                "preProcessors": [],
+                "postProcessors": [],
+                "inheritPostProcessors": {},
+                "inheritPreProcessors": {}
+              }
+            },
+            {
+              "name": "Get All Subscriptions",
+              "api": {
+                "id": "21746142",
+                "method": "get",
+                "path": "/v1/subscriptions",
+                "parameters": {
+                  "path": [],
+                  "query": [
+                    {
+                      "id": "pageParam",
+                      "name": "page",
+                      "required": false,
+                      "enable": true,
+                      "description": "Page number for pagination",
+                      "example": 1,
+                      "type": "number"
+                    },
+                    {
+                      "id": "limitParam",
+                      "name": "limit",
+                      "required": false,
+                      "enable": true,
+                      "description": "Number of items per page (max 100)",
+                      "example": 10,
+                      "type": "number"
+                    }
+                  ],
+                  "cookie": [],
+                  "header": [
+                    {
+                      "id": "kIN7Rf9zns",
+                      "name": "x-api-key",
+                      "required": false,
+                      "enable": true,
+                      "description": "API key for authentication",
+                      "example": "transakjhd182808766544$#@%$^^&*_-HAGFVDFGAWgvaf&^!@#$",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "auth": {},
+                "securityScheme": {},
+                "commonParameters": {
+                  "query": [],
+                  "body": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "responses": [
+                  {
+                    "id": "31958142",
+                    "code": 200,
+                    "name": "Success",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "subscriptions": {
+                              "type": "array"
+                            },
+                            "pagination": {
+                              "type": "object",
+                              "x-apidog-orders": []
+                            }
+                          },
+                          "x-apidog-orders": [
+                            "subscriptions",
+                            "pagination"
+                          ]
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message",
+                        "data"
+                      ]
+                    },
+                    "description": "Subscriptions retrieved successfully",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "responseExamples": [
+                  {
+                    "name": "Success",
+                    "data": "{\r\n    \"success\": true,\r\n    \"message\": \"Subscriptions retrieved successfully\",\r\n    \"data\": {\r\n        \"subscriptions\": [...],\r\n        \"pagination\": {\r\n            \"page\": 1,\r\n            \"limit\": 10,\r\n            \"total\": 25,\r\n            \"totalPages\": 3\r\n        }\r\n    }\r\n}",
+                    "responseId": "31958142",
+                    "description": "",
+                    "oasKey": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "requestBody": {
+                  "type": "none",
+                  "parameters": [],
+                  "oasExtensions": ""
+                },
+                "description": "Get all subscriptions with pagination (Admin access)",
+                "tags": [],
+                "status": "developing",
+                "serverId": "",
+                "operationId": "",
+                "sourceUrl": "",
+                "ordering": 0,
+                "cases": [],
+                "mocks": [],
+                "customApiFields": "{}",
+                "advancedSettings": {
+                  "disabledSystemHeaders": {}
+                },
+                "mockScript": {},
+                "codeSamples": [],
+                "commonResponseStatus": {},
+                "responseChildren": [],
+                "visibility": "INHERITED",
+                "moduleId": 867727,
+                "oasExtensions": "",
+                "type": "http",
+                "preProcessors": [],
+                "postProcessors": [],
+                "inheritPostProcessors": {},
+                "inheritPreProcessors": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payment Webhook",
+          "id": 5620191,
+          "auth": {},
+          "securityScheme": {},
+          "parentId": 0,
+          "serverId": "",
+          "description": "System webhook for payment notifications",
+          "identityPattern": {
+            "httpApi": {
+              "type": "inherit",
+              "bodyType": "",
+              "fields": []
+            }
+          },
+          "shareSettings": {},
+          "visibility": "INHERITED",
+          "moduleId": 867727,
+          "preProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "postProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "inheritPostProcessors": {},
+          "inheritPreProcessors": {},
+          "items": [
+            {
+              "name": "Payment Webhook",
+              "api": {
+                "id": "24331040",
+                "method": "post",
+                "path": "/v1/subscriptions/webhook",
+                "parameters": {
+                  "path": [],
+                  "query": [],
+                  "cookie": [],
+                  "header": [
+                    {
+                      "id": "kIN7Rf9zns",
+                      "name": "x-api-key",
+                      "required": false,
+                      "enable": true,
+                      "description": "API key for authentication",
+                      "example": "transakjhd182808766544$#@%$^^&*_-HAGFVDFGAWgvaf&^!@#$",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "auth": {},
+                "securityScheme": {},
+                "commonParameters": {
+                  "query": [],
+                  "body": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "responses": [
+                  {
+                    "id": "100621368",
+                    "code": 200,
+                    "name": "Success",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {},
+                      "x-apidog-orders": []
+                    },
+                    "description": "Webhook processed successfully",
+                    "contentType": "raw",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "responseExamples": [
+                  {
+                    "name": "Success",
+                    "data": "OK",
+                    "responseId": "100621368",
+                    "description": "",
+                    "oasKey": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "requestBody": {
+                  "type": "none",
+                  "parameters": [],
+                  "oasExtensions": ""
+                },
+                "description": "Handle payment webhook from Midtrans (System access)",
+                "tags": [],
+                "status": "developing",
+                "serverId": "",
+                "operationId": "",
+                "sourceUrl": "",
+                "ordering": 24,
+                "cases": [],
+                "mocks": [],
+                "customApiFields": "{}",
+                "advancedSettings": {
+                  "disabledSystemHeaders": {}
+                },
+                "mockScript": {},
+                "codeSamples": [],
+                "commonResponseStatus": {},
+                "responseChildren": [
+                  "BLANK.100621368"
+                ],
+                "visibility": "INHERITED",
+                "moduleId": 867727,
+                "oasExtensions": "",
+                "type": "http",
+                "preProcessors": [],
+                "postProcessors": [],
+                "inheritPostProcessors": {},
+                "inheritPreProcessors": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User APIs",
+      "id": 4711150,
+      "auth": {},
+      "securityScheme": {},
+      "parentId": 0,
+      "serverId": "",
+      "description": "API endpoints that can be accessed by regular users",
+      "identityPattern": {
+        "httpApi": {
+          "type": "methodAndPath",
+          "bodyType": "",
+          "fields": []
+        }
+      },
+      "shareSettings": {},
+      "visibility": "SHARED",
+      "moduleId": 867727,
+      "preProcessors": [
+        {
+          "id": "inheritProcessors",
+          "type": "inheritProcessors",
+          "data": {}
+        }
+      ],
+      "postProcessors": [
+        {
+          "id": "inheritProcessors",
+          "type": "inheritProcessors",
+          "data": {}
+        }
+      ],
+      "inheritPostProcessors": {},
+      "inheritPreProcessors": {},
+      "items": [
+        {
+          "name": "Authentication",
+          "id": 4711194,
+          "auth": {},
+          "securityScheme": {},
+          "parentId": 0,
+          "serverId": "",
+          "description": "User authentication endpoints",
+          "identityPattern": {
+            "httpApi": {
+              "type": "inherit",
+              "bodyType": "",
+              "fields": []
+            }
+          },
+          "shareSettings": {},
+          "visibility": "INHERITED",
+          "moduleId": 867727,
+          "preProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "postProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "inheritPostProcessors": {},
+          "inheritPreProcessors": {},
+          "items": [
+            {
+              "name": "Register",
+              "api": {
+                "id": "20717031",
+                "method": "post",
+                "path": "/v1/auth/register",
+                "parameters": {
+                  "path": [],
+                  "query": [],
+                  "cookie": [],
+                  "header": [
+                    {
+                      "id": "kIN7Rf9zns",
+                      "name": "x-api-key",
+                      "required": false,
+                      "enable": true,
+                      "description": "API key for authentication",
+                      "example": "transakjhd182808766544$#@%$^^&*_-HAGFVDFGAWgvaf&^!@#$",
+                      "type": "string"
+                    },
+                    {
+                      "id": "L0IDQWmu58",
+                      "name": "Content-Type",
+                      "required": true,
+                      "enable": true,
+                      "description": "Content type",
+                      "example": "application/json",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "auth": {},
+                "securityScheme": {},
+                "commonParameters": {
+                  "query": [],
+                  "body": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "responses": [
+                  {
+                    "id": "30087478",
+                    "code": 201,
+                    "name": "Created",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "user": {
+                              "type": "object",
+                              "x-apidog-orders": []
+                            }
+                          },
+                          "x-apidog-orders": [
+                            "user"
+                          ]
+                        },
+                        "meta": {
+                          "type": "object",
+                          "properties": {
+                            "token": {
+                              "type": "string"
+                            }
+                          },
+                          "x-apidog-orders": [
+                            "token"
+                          ]
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message",
+                        "data",
+                        "meta"
+                      ]
+                    },
+                    "description": "User successfully registered",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  },
+                  {
+                    "id": "30095089",
+                    "code": 400,
+                    "name": "Bad Request",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "errors": {
+                          "type": "array"
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message",
+                        "errors"
+                      ]
+                    },
+                    "description": "Validation error",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "responseExamples": [
+                  {
+                    "name": "Success",
+                    "data": "{\r\n    \"success\": true,\r\n    \"message\": \"Created\",\r\n    \"data\": {\r\n        \"user\": {\r\n            \"id\": \"cmesrfsss0000ftfg13ilc71m\",\r\n            \"email\": \"denisetiya0@gmail.com\",\r\n            \"password\": \"67967016d7eb844fe7b3a1c3d69c24dce17d21557b0c59a6568622a6bade5cae17ade4b5f5b41e38470a431a3557c8b774df28df262024c0a9c3011334688d487c5f6e53cb7c24fa15fb29fc6cc190c3c2a33cad595c7a54531a22b700d7ded737bba3be7f2d79c1a79fca9f8016c078c6cd6e7fa1cd198d77e37802a4bc6\",\r\n            \"role\": \"USER\",\r\n            \"subscriptionId\": \"cmesn7has0000d5etmb7jw21s\",\r\n            \"UserDetails\": {\r\n                \"id\": \"cmesrfsss0001ftfgqaqjsovr\",\r\n                \"userId\": \"cmesrfsss0000ftfg13ilc71m\",\r\n                \"name\": \"deni setiya\",\r\n                \"imageProfile\": null,\r\n                \"phoneNumber\": null,\r\n                \"address\": null,\r\n                \"createdAt\": \"2025-08-26T16:28:22.541Z\",\r\n                \"updatedAt\": \"2025-08-26T16:28:22.541Z\"\r\n            },\r\n            \"isEmployee\": false\r\n        }\r\n    },\r\n    \"meta\": {\r\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\r\n    }\r\n}",
+                    "responseId": "30087478",
+                    "description": "",
+                    "oasKey": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "requestBody": {
+                  "type": "application/json",
+                  "parameters": [],
+                  "jsonSchema": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 100,
+                        "pattern": "^[a-zA-Z\\s]+$",
+                        "description": "Nama lengkap pengguna (hanya huruf dan spasi)"
+                      },
+                      "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Email pengguna yang valid"
+                      },
+                      "password": {
+                        "type": "string",
+                        "minLength": 6,
+                        "maxLength": 100,
+                        "description": "Password minimal 6 karakter"
+                      }
+                    },
+                    "x-apidog-orders": [
+                      "name",
+                      "email",
+                      "password"
+                    ],
+                    "required": [
+                      "name",
+                      "email",
+                      "password"
+                    ]
+                  },
+                  "examples": [
+                    {
+                      "value": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"password123\"\n}",
+                      "mediaType": "application/json",
+                      "description": "Contoh request registrasi yang valid"
+                    }
+                  ],
+                  "mediaType": "",
+                  "oasExtensions": "",
+                  "required": false,
+                  "additionalContentTypes": []
+                },
+                "description": "Register a new user account (Public access)",
+                "tags": [],
+                "status": "developing",
+                "serverId": "",
+                "operationId": "",
+                "sourceUrl": "",
+                "ordering": 0,
+                "cases": [],
+                "mocks": [],
+                "customApiFields": "{}",
+                "advancedSettings": {
+                  "disabledSystemHeaders": {}
+                },
+                "mockScript": {},
+                "codeSamples": [],
+                "commonResponseStatus": {},
+                "responseChildren": [
+                  "BLANK.30087478",
+                  "BLANK.30095089"
+                ],
+                "visibility": "INHERITED",
+                "moduleId": 867727,
+                "oasExtensions": "",
+                "type": "http",
+                "preProcessors": [],
+                "postProcessors": [],
+                "inheritPostProcessors": {},
+                "inheritPreProcessors": {}
+              }
+            },
+            {
+              "name": "Login",
+              "api": {
+                "id": "20718312",
+                "method": "post",
+                "path": "/v1/auth/login",
+                "parameters": {
+                  "path": [],
+                  "query": [],
+                  "cookie": [],
+                  "header": [
+                    {
+                      "id": "kIN7Rf9zns",
+                      "name": "x-api-key",
+                      "required": false,
+                      "enable": true,
+                      "description": "API key for authentication",
+                      "example": "transakjhd182808766544$#@%$^^&*_-HAGFVDFGAWgvaf&^!@#$",
+                      "type": "string"
+                    },
+                    {
+                      "id": "I8M8SSrUbC",
+                      "name": "Content-Type",
+                      "required": true,
+                      "enable": true,
+                      "description": "Content type",
+                      "example": "application/json",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "auth": {},
+                "securityScheme": {},
+                "commonParameters": {
+                  "query": [],
+                  "body": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "responses": [
+                  {
+                    "id": "30091942",
+                    "code": 200,
+                    "name": "Success",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "user": {
+                              "type": "object",
+                              "x-apidog-orders": []
+                            }
+                          },
+                          "x-apidog-orders": [
+                            "user"
+                          ]
+                        },
+                        "meta": {
+                          "type": "object",
+                          "properties": {
+                            "token": {
+                              "type": "string"
+                            }
+                          },
+                          "x-apidog-orders": [
+                            "token"
+                          ]
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message",
+                        "data",
+                        "meta"
+                      ]
+                    },
+                    "description": "Login successful",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  },
+                  {
+                    "id": "30094850",
+                    "code": 400,
+                    "name": "Bad Request",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "errors": {
+                          "type": "array"
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message",
+                        "errors"
+                      ]
+                    },
+                    "description": "Validation error",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "responseExamples": [
+                  {
+                    "name": "Success",
+                    "data": "{\r\n    \"success\": true,\r\n    \"message\": \"Login berhasil\",\r\n    \"data\": {\r\n        \"user\": {\r\n            \"id\": \"cmespfdsm0000l8etgyl8ff8a\",\r\n            \"email\": \"denisetiya4@gmail.com\",\r\n            \"password\": \"15a6098637cb221b2e96f716366a881ae5c23a425fdce17c95aefb6ee529357076aef6a1b5fe25bbcf7e6b890f6e2f2f1cdf1571d011d1b1d8c95a138cff0a1a03fc8ea60de80dd1d730d1a0ce6dcace71957f2e8b6988264f6845e14fcd470b954892e7868888c0b5633b729e1b9b83a91da263c703cdf69ea0e2378aaa\",\r\n            \"role\": \"USER\",\r\n            \"subscriptionId\": \"cmesn7has0000d5etmb7jw21s\",\r\n            \"UserDetails\": {\r\n                \"name\": \"deni setiya\",\r\n                \"imageProfile\": null,\r\n                \"phoneNumber\": null,\r\n                \"address\": null\r\n            },\r\n            \"isEmployee\": false\r\n        }\r\n    },\r\n    \"meta\": {\r\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\r\n    }\r\n}",
+                    "responseId": "30091942",
+                    "description": "",
+                    "oasKey": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "requestBody": {
+                  "type": "application/json",
+                  "parameters": [],
+                  "jsonSchema": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Email pengguna yang valid"
+                      },
+                      "password": {
+                        "type": "string",
+                        "minLength": 6,
+                        "maxLength": 100,
+                        "description": "Password pengguna"
+                      }
+                    },
+                    "x-apidog-orders": [
+                      "email",
+                      "password"
+                    ],
+                    "required": [
+                      "email",
+                      "password"
+                    ]
+                  },
+                  "examples": [
+                    {
+                      "value": "{\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"password123\"\n}",
+                      "mediaType": "application/json",
+                      "description": "Contoh request login yang valid"
+                    }
+                  ],
+                  "mediaType": "",
+                  "oasExtensions": "",
+                  "required": false,
+                  "additionalContentTypes": []
+                },
+                "description": "Login user with email and password (Public access)",
+                "tags": [],
+                "status": "developing",
+                "serverId": "",
+                "operationId": "",
+                "sourceUrl": "",
+                "ordering": 6,
+                "cases": [],
+                "mocks": [],
+                "customApiFields": "{}",
+                "advancedSettings": {
+                  "disabledSystemHeaders": {}
+                },
+                "mockScript": {},
+                "codeSamples": [],
+                "commonResponseStatus": {},
+                "responseChildren": [
+                  "BLANK.30091942",
+                  "BLANK.30094850"
+                ],
+                "visibility": "INHERITED",
+                "moduleId": 867727,
+                "oasExtensions": "",
+                "type": "http",
+                "preProcessors": [],
+                "postProcessors": [],
+                "inheritPostProcessors": {},
+                "inheritPreProcessors": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "User Profile",
+          "id": 5620187,
+          "auth": {},
+          "securityScheme": {},
+          "parentId": 0,
+          "serverId": "",
+          "description": "User profile management endpoints",
+          "identityPattern": {
+            "httpApi": {
+              "type": "inherit",
+              "bodyType": "",
+              "fields": []
+            }
+          },
+          "shareSettings": {},
+          "visibility": "INHERITED",
+          "moduleId": 867727,
+          "preProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "postProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "inheritPostProcessors": {},
+          "inheritPreProcessors": {},
+          "items": [
+            {
+              "name": "Get My Profile",
+              "api": {
+                "id": "24331037",
+                "method": "get",
+                "path": "/v1/users/me",
+                "parameters": {
+                  "path": [],
+                  "query": [],
+                  "cookie": [],
+                  "header": [
+                    {
+                      "id": "kIN7Rf9zns",
+                      "name": "x-api-key",
+                      "required": false,
+                      "enable": true,
+                      "description": "API key for authentication",
+                      "example": "transakjhd182808766544$#@%$^^&*_-HAGFVDFGAWgvaf&^!@#$",
+                      "type": "string"
+                    },
+                    {
+                      "id": "L0IDQWmu58",
+                      "name": "Authorization",
+                      "required": true,
+                      "enable": true,
+                      "description": "Bearer token for authentication",
+                      "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "auth": {
+                  "type": "bearer"
+                },
+                "securityScheme": {},
+                "commonParameters": {
+                  "query": [],
+                  "body": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "responses": [
+                  {
+                    "id": "169954665",
+                    "code": 200,
+                    "name": "Success",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "user": {
+                              "type": "object",
+                              "x-apidog-orders": []
+                            }
+                          },
+                          "x-apidog-orders": [
+                            "user"
+                          ]
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message",
+                        "data"
+                      ]
+                    },
+                    "description": "Profile retrieved successfully",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  },
+                  {
+                    "id": "114851302",
+                    "code": 401,
+                    "name": "Unauthorized",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message"
+                      ]
+                    },
+                    "description": "Unauthorized access",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "responseExamples": [
+                  {
+                    "name": "Success",
+                    "data": "{\r\n    \"success\": true,\r\n    \"message\": \"Profile retrieved successfully\",\r\n    \"data\": {\r\n        \"user\": {\r\n            \"id\": \"cmesrfsss0000ftfg13ilc71m\",\r\n            \"email\": \"denisetiya0@gmail.com\",\r\n            \"role\": \"USER\",\r\n            \"UserDetails\": {\r\n                \"id\": \"cmesrfsss0001ftfgqaqjsovr\",\r\n                \"userId\": \"cmesrfsss0000ftfg13ilc71m\",\r\n                \"name\": \"deni setiya\",\r\n                \"imageProfile\": null,\r\n                \"phoneNumber\": null,\r\n                \"address\": null,\r\n                \"createdAt\": \"2025-08-26T16:28:22.541Z\",\r\n                \"updatedAt\": \"2025-08-26T16:28:22.541Z\"\r\n            }\r\n        }\r\n    }\r\n}",
+                    "responseId": "169954665",
+                    "description": "",
+                    "oasKey": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "requestBody": {
+                  "type": "none",
+                  "parameters": [],
+                  "oasExtensions": ""
+                },
+                "description": "Get current user profile (User access)",
+                "tags": [],
+                "status": "developing",
+                "serverId": "",
+                "operationId": "",
+                "sourceUrl": "",
+                "ordering": 0,
+                "cases": [],
+                "mocks": [],
+                "customApiFields": "{}",
+                "advancedSettings": {
+                  "disabledSystemHeaders": {}
+                },
+                "mockScript": {},
+                "codeSamples": [],
+                "commonResponseStatus": {},
+                "responseChildren": [
+                  "BLANK.169954665",
+                  "BLANK.114851302"
+                ],
+                "visibility": "INHERITED",
+                "moduleId": 867727,
+                "oasExtensions": "",
+                "type": "http",
+                "preProcessors": [],
+                "postProcessors": [],
+                "inheritPostProcessors": {},
+                "inheritPreProcessors": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Subscription Access",
+          "id": 5620188,
+          "auth": {},
+          "securityScheme": {},
+          "parentId": 0,
+          "serverId": "",
+          "description": "Subscription access and payment endpoints for users",
+          "identityPattern": {
+            "httpApi": {
+              "type": "inherit",
+              "bodyType": "",
+              "fields": []
+            }
+          },
+          "shareSettings": {},
+          "visibility": "INHERITED",
+          "moduleId": 867727,
+          "preProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "postProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "inheritPostProcessors": {},
+          "inheritPreProcessors": {},
+          "items": [
+            {
+              "name": "Get Subscription by ID",
+              "api": {
+                "id": "24331038",
+                "method": "get",
+                "path": "/v1/subscriptions/{id}",
+                "parameters": {
+                  "path": [
+                    {
+                      "id": "id#0",
+                      "name": "id",
+                      "required": true,
+                      "enable": true,
+                      "description": "Subscription ID",
+                      "example": "cmesn7has0000d5etmb7jw21s",
+                      "type": "string"
+                    }
+                  ],
+                  "query": [],
+                  "cookie": [],
+                  "header": [
+                    {
+                      "id": "kIN7Rf9zns",
+                      "name": "x-api-key",
+                      "required": false,
+                      "enable": true,
+                      "description": "API key for authentication",
+                      "example": "transakjhd182808766544$#@%$^^&*_-HAGFVDFGAWgvaf&^!@#$",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "auth": {},
+                "securityScheme": {},
+                "commonParameters": {
+                  "query": [],
+                  "body": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "responses": [
+                  {
+                    "id": "159834349",
+                    "code": 200,
+                    "name": "Success",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "subscription": {
+                              "type": "object",
+                              "x-apidog-orders": []
+                            }
+                          },
+                          "x-apidog-orders": [
+                            "subscription"
+                          ]
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message",
+                        "data"
+                      ]
+                    },
+                    "description": "Subscription retrieved successfully",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  },
+                  {
+                    "id": "116500599",
+                    "code": 404,
+                    "name": "Not Found",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message"
+                      ]
+                    },
+                    "description": "Subscription not found",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "responseExamples": [
+                  {
+                    "name": "Success",
+                    "data": "{\r\n    \"success\": true,\r\n    \"message\": \"Subscription retrieved successfully\",\r\n    \"data\": {\r\n        \"subscription\": {\r\n            \"id\": \"cmesn7has0000d5etmb7jw21s\",\r\n            \"name\": \"Premium Plan\",\r\n            \"price\": 29.99,\r\n            \"currency\": \"USD\",\r\n            \"features\": [\"Unlimited access\", \"Priority support\"]\r\n        }\r\n    }\r\n}",
+                    "responseId": "159834349",
+                    "description": "",
+                    "oasKey": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "requestBody": {
+                  "type": "none",
+                  "parameters": [],
+                  "oasExtensions": ""
+                },
+                "description": "Get subscription by ID (User & Admin access)",
+                "tags": [],
+                "status": "developing",
+                "serverId": "",
+                "operationId": "",
+                "sourceUrl": "",
+                "ordering": 6,
+                "cases": [],
+                "mocks": [],
+                "customApiFields": "{}",
+                "advancedSettings": {
+                  "disabledSystemHeaders": {}
+                },
+                "mockScript": {},
+                "codeSamples": [],
+                "commonResponseStatus": {},
+                "responseChildren": [
+                  "BLANK.159834349",
+                  "BLANK.116500599"
+                ],
+                "visibility": "INHERITED",
+                "moduleId": 867727,
+                "oasExtensions": "",
+                "type": "http",
+                "preProcessors": [],
+                "postProcessors": [],
+                "inheritPostProcessors": {},
+                "inheritPreProcessors": {}
+              }
+            },
+            {
+              "name": "Pay for Subscription",
+              "api": {
+                "id": "24331039",
+                "method": "post",
+                "path": "/v1/subscriptions/pay",
+                "parameters": {
+                  "path": [],
+                  "query": [],
+                  "cookie": [],
+                  "header": [
+                    {
+                      "id": "kIN7Rf9zns",
+                      "name": "x-api-key",
+                      "required": false,
+                      "enable": true,
+                      "description": "API key for authentication",
+                      "example": "transakjhd182808766544$#@%$^^&*_-HAGFVDFGAWgvaf&^!@#$",
+                      "type": "string"
+                    },
+                    {
+                      "id": "L0IDQWmu58",
+                      "name": "Authorization",
+                      "required": true,
+                      "enable": true,
+                      "description": "Bearer token for authentication",
+                      "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "auth": {
+                  "type": "bearer"
+                },
+                "securityScheme": {},
+                "commonParameters": {
+                  "query": [],
+                  "body": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "responses": [
+                  {
+                    "id": "101029094",
+                    "code": 200,
+                    "name": "Success",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "payment": {
+                              "type": "object",
+                              "x-apidog-orders": []
+                            }
+                          },
+                          "x-apidog-orders": [
+                            "payment"
+                          ]
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message",
+                        "data"
+                      ]
+                    },
+                    "description": "Payment processed successfully",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "responseExamples": [
+                  {
+                    "name": "Success",
+                    "data": "{\r\n    \"success\": true,\r\n    \"message\": \"Payment processed successfully\",\r\n    \"data\": {\r\n        \"payment\": {\r\n            \"orderId\": \"SUB_cmesn7has0000d5etmb7jw21s_cmesrfsss0000ftfg13ilc71m\",\r\n            \"amount\": 29.99,\r\n            \"currency\": \"USD\",\r\n            \"paymentUrl\": \"https://app.midtrans.com/snap/v2/vtweb/...\",\r\n            \"token\": \"...\"\r\n        }\r\n    }\r\n}",
+                    "responseId": "101029094",
+                    "description": "",
+                    "oasKey": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "requestBody": {
+                  "type": "application/json",
+                  "parameters": [],
+                  "jsonSchema": {
+                    "type": "object",
+                    "properties": {
+                      "subscriptionId": {
+                        "type": "string",
+                        "description": "Subscription ID to pay for"
+                      },
+                      "paymentMethod": {
+                        "type": "string",
+                        "enum": [
+                          "va",
+                          "qr",
+                          "wallet"
+                        ],
+                        "description": "Payment method (va, qr, wallet)"
+                      },
+                      "bank": {
+                        "type": "string",
+                        "description": "Bank code (required for VA payments)"
+                      },
+                      "walletProvider": {
+                        "type": "string",
+                        "description": "Wallet provider (required for wallet payments)"
+                      }
+                    },
+                    "x-apidog-orders": [
+                      "subscriptionId",
+                      "paymentMethod",
+                      "bank",
+                      "walletProvider"
+                    ],
+                    "required": [
+                      "subscriptionId",
+                      "paymentMethod"
+                    ]
+                  },
+                  "examples": [
+                    {
+                      "value": "{\n    \"subscriptionId\": \"cmesn7has0000d5etmb7jw21s\",\n    \"paymentMethod\": \"va\",\n    \"bank\": \"bca\"\n}",
+                      "mediaType": "application/json",
+                      "description": "Contoh request pembayaran subscription dengan VA"
+                    }
+                  ],
+                  "mediaType": "",
+                  "oasExtensions": "",
+                  "required": false,
+                  "additionalContentTypes": []
+                },
+                "description": "Pay for a subscription (User access)",
+                "tags": [],
+                "status": "developing",
+                "serverId": "",
+                "operationId": "",
+                "sourceUrl": "",
+                "ordering": 18,
+                "cases": [],
+                "mocks": [],
+                "customApiFields": "{}",
+                "advancedSettings": {
+                  "disabledSystemHeaders": {}
+                },
+                "mockScript": {},
+                "codeSamples": [],
+                "commonResponseStatus": {},
+                "responseChildren": [
+                  "BLANK.101029094"
+                ],
+                "visibility": "INHERITED",
+                "moduleId": 867727,
+                "oasExtensions": "",
+                "type": "http",
+                "preProcessors": [],
+                "postProcessors": [],
+                "inheritPostProcessors": {},
+                "inheritPreProcessors": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payment Processing",
+          "id": 5620189,
+          "auth": {},
+          "securityScheme": {},
+          "parentId": 0,
+          "serverId": "",
+          "description": "Payment processing and status endpoints",
+          "identityPattern": {
+            "httpApi": {
+              "type": "inherit",
+              "bodyType": "",
+              "fields": []
+            }
+          },
+          "shareSettings": {},
+          "visibility": "INHERITED",
+          "moduleId": 867727,
+          "preProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "postProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "inheritPostProcessors": {},
+          "inheritPreProcessors": {},
+          "items": [
+            {
+              "name": "Create Payment",
+              "api": {
+                "id": "24331041",
+                "method": "post",
+                "path": "/v1/payments",
+                "parameters": {
+                  "path": [],
+                  "query": [],
+                  "cookie": [],
+                  "header": [
+                    {
+                      "id": "kIN7Rf9zns",
+                      "name": "x-api-key",
+                      "required": false,
+                      "enable": true,
+                      "description": "API key for authentication",
+                      "example": "transakjhd182808766544$#@%$^^&*_-HAGFVDFGAWgvaf&^!@#$",
+                      "type": "string"
+                    },
+                    {
+                      "id": "L0IDQWmu58",
+                      "name": "Authorization",
+                      "required": true,
+                      "enable": true,
+                      "description": "Bearer token for authentication",
+                      "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "auth": {
+                  "type": "bearer"
+                },
+                "securityScheme": {},
+                "commonParameters": {
+                  "query": [],
+                  "body": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "responses": [
+                  {
+                    "id": "140344850",
+                    "code": 200,
+                    "name": "Success",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "payment": {
+                              "type": "object",
+                              "x-apidog-orders": []
+                            }
+                          },
+                          "x-apidog-orders": [
+                            "payment"
+                          ]
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message",
+                        "data"
+                      ]
+                    },
+                    "description": "Payment created successfully",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "responseExamples": [
+                  {
+                    "name": "Success",
+                    "data": "{\r\n    \"success\": true,\r\n    \"message\": \"Payment created successfully\",\r\n    \"data\": {\r\n        \"payment\": {\r\n            \"orderId\": \"ORDER_123456\",\r\n            \"amount\": 100.00,\r\n            \"currency\": \"IDR\",\r\n            \"paymentUrl\": \"https://app.midtrans.com/snap/v2/vtweb/...\",\r\n            \"token\": \"...\"\r\n        }\r\n    }\r\n}",
+                    "responseId": "140344850",
+                    "description": "",
+                    "oasKey": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "requestBody": {
+                  "type": "application/json",
+                  "parameters": [],
+                  "jsonSchema": {
+                    "type": "object",
+                    "properties": {
+                      "orderId": {
+                        "type": "string",
+                        "description": "Unique order identifier"
+                      },
+                      "amount": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Payment amount (must be positive)"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "default": "IDR",
+                        "description": "Currency code"
+                      },
+                      "customer": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Customer ID"
+                          },
+                          "email": {
+                            "type": "string",
+                            "format": "email",
+                            "description": "Customer email"
+                          },
+                          "firstName": {
+                            "type": "string",
+                            "description": "Customer first name (optional)"
+                          },
+                          "lastName": {
+                            "type": "string",
+                            "description": "Customer last name (optional)"
+                          },
+                          "phone": {
+                            "type": "string",
+                            "description": "Customer phone number (optional)"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "email"
+                        ],
+                        "description": "Customer information",
+                        "x-apidog-orders": [
+                          "id",
+                          "email",
+                          "firstName",
+                          "lastName",
+                          "phone"
+                        ]
+                      },
+                      "paymentMethod": {
+                        "type": "string",
+                        "enum": [
+                          "va",
+                          "qr",
+                          "wallet"
+                        ],
+                        "description": "Payment method (va, qr, or wallet)"
+                      },
+                      "bank": {
+                        "type": "string",
+                        "description": "Bank code (required for VA payments)"
+                      },
+                      "walletProvider": {
+                        "type": "string",
+                        "description": "Wallet provider (required for wallet payments)"
+                      }
+                    },
+                    "x-apidog-orders": [
+                      "orderId",
+                      "amount",
+                      "currency",
+                      "customer",
+                      "paymentMethod",
+                      "bank",
+                      "walletProvider"
+                    ],
+                    "required": [
+                      "orderId",
+                      "amount",
+                      "customer",
+                      "paymentMethod"
+                    ]
+                  },
+                  "examples": [
+                    {
+                      "value": "{\n    \"orderId\": \"ORDER_123456\",\n    \"amount\": 100.00,\n    \"currency\": \"IDR\",\n    \"customer\": {\n        \"id\": \"CUST_001\",\n        \"email\": \"customer@example.com\",\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"phone\": \"+62812345678\"\n    },\n    \"paymentMethod\": \"va\",\n    \"bank\": \"bca\"\n}",
+                      "mediaType": "application/json",
+                      "description": "Contoh request pembayaran dengan VA"
+                    }
+                  ],
+                  "mediaType": "",
+                  "oasExtensions": "",
+                  "required": false,
+                  "additionalContentTypes": []
+                },
+                "description": "Create a new payment (User access)",
+                "tags": [],
+                "status": "developing",
+                "serverId": "",
+                "operationId": "",
+                "sourceUrl": "",
+                "ordering": 0,
+                "cases": [],
+                "mocks": [],
+                "customApiFields": "{}",
+                "advancedSettings": {
+                  "disabledSystemHeaders": {}
+                },
+                "mockScript": {},
+                "codeSamples": [],
+                "commonResponseStatus": {},
+                "responseChildren": [
+                  "BLANK.140344850"
+                ],
+                "visibility": "INHERITED",
+                "moduleId": 867727,
+                "oasExtensions": "",
+                "type": "http",
+                "preProcessors": [],
+                "postProcessors": [],
+                "inheritPostProcessors": {},
+                "inheritPreProcessors": {}
+              }
+            },
+            {
+              "name": "Get Payment Status",
+              "api": {
+                "id": "24331042",
+                "method": "get",
+                "path": "/v1/payments/{orderId}",
+                "parameters": {
+                  "path": [
+                    {
+                      "id": "orderId#0",
+                      "name": "orderId",
+                      "required": true,
+                      "enable": true,
+                      "description": "Order ID to check status",
+                      "example": "ORDER_123456",
+                      "type": "string"
+                    }
+                  ],
+                  "query": [],
+                  "cookie": [],
+                  "header": [
+                    {
+                      "id": "kIN7Rf9zns",
+                      "name": "x-api-key",
+                      "required": false,
+                      "enable": true,
+                      "description": "API key for authentication",
+                      "example": "transakjhd182808766544$#@%$^^&*_-HAGFVDFGAWgvaf&^!@#$",
+                      "type": "string"
+                    },
+                    {
+                      "id": "L0IDQWmu58",
+                      "name": "Authorization",
+                      "required": true,
+                      "enable": true,
+                      "description": "Bearer token for authentication",
+                      "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "auth": {
+                  "type": "bearer"
+                },
+                "securityScheme": {},
+                "commonParameters": {
+                  "query": [],
+                  "body": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "responses": [
+                  {
+                    "id": "146219993",
+                    "code": 200,
+                    "name": "Success",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "payment": {
+                              "type": "object",
+                              "x-apidog-orders": []
+                            }
+                          },
+                          "x-apidog-orders": [
+                            "payment"
+                          ]
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message",
+                        "data"
+                      ]
+                    },
+                    "description": "Payment status retrieved successfully",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "responseExamples": [
+                  {
+                    "name": "Success",
+                    "data": "{\r\n    \"success\": true,\r\n    \"message\": \"Payment status retrieved successfully\",\r\n    \"data\": {\r\n        \"payment\": {\r\n            \"orderId\": \"ORDER_123456\",\r\n            \"status\": \"settlement\",\r\n            \"amount\": 100.00,\r\n            \"currency\": \"IDR\",\r\n            \"transactionTime\": \"2025-01-01T10:00:00Z\"\r\n        }\r\n    }\r\n}",
+                    "responseId": "146219993",
+                    "description": "",
+                    "oasKey": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "requestBody": {
+                  "type": "none",
+                  "parameters": [],
+                  "oasExtensions": ""
+                },
+                "description": "Get payment status by order ID (User & Admin access)",
+                "tags": [],
+                "status": "developing",
+                "serverId": "",
+                "operationId": "",
+                "sourceUrl": "",
+                "ordering": 6,
+                "cases": [],
+                "mocks": [],
+                "customApiFields": "{}",
+                "advancedSettings": {
+                  "disabledSystemHeaders": {}
+                },
+                "mockScript": {},
+                "codeSamples": [],
+                "commonResponseStatus": {},
+                "responseChildren": [
+                  "BLANK.146219993"
+                ],
+                "visibility": "INHERITED",
+                "moduleId": 867727,
+                "oasExtensions": "",
+                "type": "http",
+                "preProcessors": [],
+                "postProcessors": [],
+                "inheritPostProcessors": {},
+                "inheritPreProcessors": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payment History",
+          "id": 5620190,
+          "auth": {},
+          "securityScheme": {},
+          "parentId": 0,
+          "serverId": "",
+          "description": "Payment history endpoints",
+          "identityPattern": {
+            "httpApi": {
+              "type": "inherit",
+              "bodyType": "",
+              "fields": []
+            }
+          },
+          "shareSettings": {},
+          "visibility": "INHERITED",
+          "moduleId": 867727,
+          "preProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "postProcessors": [
+            {
+              "id": "inheritProcessors",
+              "type": "inheritProcessors",
+              "data": {}
+            }
+          ],
+          "inheritPostProcessors": {},
+          "inheritPreProcessors": {},
+          "items": [
+            {
+              "name": "Get Payment History by User ID",
+              "api": {
+                "id": "24331043",
+                "method": "get",
+                "path": "/v1/payment-history/user/{userId}",
+                "parameters": {
+                  "path": [
+                    {
+                      "id": "userId#0",
+                      "name": "userId",
+                      "required": true,
+                      "enable": true,
+                      "description": "User ID to get payment history for",
+                      "example": "cmesrfsss0000ftfg13ilc71m",
+                      "type": "string"
+                    }
+                  ],
+                  "query": [],
+                  "cookie": [],
+                  "header": [
+                    {
+                      "id": "kIN7Rf9zns",
+                      "name": "x-api-key",
+                      "required": false,
+                      "enable": true,
+                      "description": "API key for authentication",
+                      "example": "transakjhd182808766544$#@%$^^&*_-HAGFVDFGAWgvaf&^!@#$",
+                      "type": "string"
+                    },
+                    {
+                      "id": "L0IDQWmu58",
+                      "name": "Authorization",
+                      "required": true,
+                      "enable": true,
+                      "description": "Bearer token for authentication",
+                      "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "auth": {
+                  "type": "bearer"
+                },
+                "securityScheme": {},
+                "commonParameters": {
+                  "query": [],
+                  "body": [],
+                  "cookie": [],
+                  "header": []
+                },
+                "responses": [
+                  {
+                    "id": "110701704",
+                    "code": 200,
+                    "name": "Success",
+                    "headers": [],
+                    "jsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "paymentHistory": {
+                              "type": "array"
+                            }
+                          },
+                          "x-apidog-orders": [
+                            "paymentHistory"
+                          ]
+                        }
+                      },
+                      "x-apidog-orders": [
+                        "success",
+                        "message",
+                        "data"
+                      ]
+                    },
+                    "description": "Payment history retrieved successfully",
+                    "contentType": "json",
+                    "mediaType": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "responseExamples": [
+                  {
+                    "name": "Success",
+                    "data": "{\r\n    \"success\": true,\r\n    \"message\": \"Payment history retrieved successfully\",\r\n    \"data\": {\r\n        \"paymentHistory\": [\r\n            {\r\n                \"id\": \"php_001\",\r\n                \"orderId\": \"ORDER_123456\",\r\n                \"amount\": 100.00,\r\n                \"currency\": \"IDR\",\r\n                \"status\": \"settlement\",\r\n                \"createdAt\": \"2025-01-01T10:00:00Z\"\r\n            }\r\n        ]\r\n    }\r\n}",
+                    "responseId": "110701704",
+                    "description": "",
+                    "oasKey": "",
+                    "oasExtensions": ""
+                  }
+                ],
+                "requestBody": {
+                  "type": "none",
+                  "parameters": [],
+                  "oasExtensions": ""
+                },
+                "description": "Get payment history by user ID (User & Admin access)",
+                "tags": [],
+                "status": "developing",
+                "serverId": "",
+                "operationId": "",
+                "sourceUrl": "",
+                "ordering": 0,
+                "cases": [],
+                "mocks": [],
+                "customApiFields": "{}",
+                "advancedSettings": {
+                  "disabledSystemHeaders": {}
+                },
+                "mockScript": {},
+                "codeSamples": [],
+                "commonResponseStatus": {},
+                "responseChildren": [
+                  "BLANK.110701704"
+                ],
+                "visibility": "INHERITED",
+                "moduleId": 867727,
+                "oasExtensions": "",
+                "type": "http",
+                "preProcessors": [],
+                "postProcessors": [],
+                "inheritPostProcessors": {},
+                "inheritPreProcessors": {}
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "socketCollection": [],
+  "docCollection": [],
+  "webSocketCollection": [],
+  "socketIOCollection": [],
+  "responseCollection": [],
+  "schemaCollection": [],
+  "securitySchemeCollection": [],
+  "requestCollection": [
+    {
+      "name": "Root",
+      "children": [],
+      "ordering": [
+        "requestFolder.7836378"
+      ],
+      "items": []
+    }
+  ],
+  "environments": [],
+  "commonScripts": [],
+  "globalVariables": [],
+  "commonParameters": null,
+  "projectSetting": {
+    "id": "1050710",
+    "auth": {},
+    "securityScheme": {},
+    "gateway": [],
+    "language": "en-US",
+    "apiStatuses": [
+      "developing",
+      "testing",
+      "released",
+      "deprecated"
+    ],
+    "mockSettings": {},
+    "preProcessors": [],
+    "postProcessors": [],
+    "advancedSettings": {
+      "enableJsonc": false,
+      "enableBigint": false,
+      "responseValidate": true,
+      "enableTestScenarioSetting": false,
+      "enableYAPICompatScript": false,
+      "isDefaultUrlEncoding": 3,
+      "publishedDocUrlRules": {
+        "defaultRule": "SLUGIFY_WITH_RESOURCE_KEY",
+        "resourceKeyStandard": "NEW"
+      }
+    },
+    "initialDisabledMockIds": [],
+    "servers": [
+      {
+        "id": "default",
+        "name": "Default Server"
+      }
+    ],
+    "cloudMock": {
+      "security": "free",
+      "enable": false,
+      "tokenKey": "apidogToken"
+    }
+  },
+  "customFunctions": [],
+  "projectTestCaseCategories": [
+    {
+      "id": 118411,
+      "name": "Positive",
+      "description": null
+    },
+    {
+      "id": 118412,
+      "name": "Negative",
+      "description": null
+    },
+    {
+      "id": 118413,
+      "name": "Boundary Value",
+      "description": null
+    },
+    {
+      "id": 118414,
+      "name": "Security",
+      "description": null
+    },
+    {
+      "id": 118415,
+      "name": "Other",
+      "description": null
+    }
+  ],
+  "projectTestCaseTags": [
+    {
+      "id": 461076,
+      "name": "Required Fields Only",
+      "description": "Send only required fields with valid values, omitting all optional fields, to test minimal valid requests."
+    },
+    {
+      "id": 461077,
+      "name": "Valid Semantic",
+      "description": "Use values that are syntactically correct and also make sense in business logic or domain context."
+    },
+    {
+      "id": 461078,
+      "name": "Enum Combination Coverage",
+      "description": "For all enum-type parameters, apply orthogonal design to systematically construct test case combinations of parameters and their enum values, dedicated to testing enum coverage."
+    },
+    {
+      "id": 461079,
+      "name": "Other Positive Case",
+      "description": "Provide realistic and valid inputs that match API specification, producing correct and expected result."
+    },
+    {
+      "id": 461080,
+      "name": "Missing Required Fields",
+      "description": "Omit one or more required fields in request body or parameters."
+    },
+    {
+      "id": 461081,
+      "name": "Invalid Values",
+      "description": "Provide values that are within correct type and format, but logically invalid for field."
+    },
+    {
+      "id": 461082,
+      "name": "Type Errors",
+      "description": "Use values with incorrect data types, such as sending a string instead of an integer."
+    },
+    {
+      "id": 461083,
+      "name": "Format Errors",
+      "description": "Provide values in an incorrect format, e.g., wrong date pattern, malformed email address."
+    },
+    {
+      "id": 461084,
+      "name": "Semantic Errors",
+      "description": "Use syntactically correct and properly formatted values that are logically impossible or violate domain rules."
+    },
+    {
+      "id": 461085,
+      "name": "Other Negative Case",
+      "description": "Provide invalid or unexpected inputs that should trigger error handling or rejection by API."
+    },
+    {
+      "id": 461086,
+      "name": "Null",
+      "description": "Must be JSON literal `null` (not empty, not \"null\")."
+    },
+    {
+      "id": 461087,
+      "name": "Zero",
+      "description": "Must be numeric literal 0."
+    },
+    {
+      "id": 461088,
+      "name": "Empty Values",
+      "description": "Must be \"\"."
+    },
+    {
+      "id": 461089,
+      "name": "Max Values",
+      "description": "Provide exact minimum and maximum allowed values for numeric or date fields."
+    },
+    {
+      "id": 461090,
+      "name": "Min Values",
+      "description": "Provide exact minimum and maximum allowed values for numeric or date fields."
+    },
+    {
+      "id": 461091,
+      "name": "Overflow",
+      "description": "Provide values just beyond allowed minimum or maximum boundaries."
+    },
+    {
+      "id": 461092,
+      "name": "Underflow",
+      "description": "Provide values just beyond allowed minimum or maximum boundaries."
+    },
+    {
+      "id": 461093,
+      "name": "Overly Long Strings",
+      "description": "Provide strings longer than maximum allowed length, or shorter than minimum required length."
+    },
+    {
+      "id": 461094,
+      "name": "Overly Short Strings",
+      "description": "Provide strings longer than maximum allowed length, or shorter than minimum required length."
+    },
+    {
+      "id": 461095,
+      "name": "Broken Object Level Authorization",
+      "description": "Users access or manipulate data objects without proper authorization."
+    },
+    {
+      "id": 461096,
+      "name": "Access Control",
+      "description": "Restricting resources and actions users can access based on roles, permissions, or attributes."
+    },
+    {
+      "id": 461097,
+      "name": "Auth Failures",
+      "description": "Authentication is weak, misconfigured, or bypassed, allowing unauthorized access."
+    },
+    {
+      "id": 461098,
+      "name": "SQL Injection",
+      "description": "Insert malicious SQL code into input fields to test for SQL injection vulnerabilities."
+    },
+    {
+      "id": 461099,
+      "name": "XSS Injection",
+      "description": "Inject JavaScript or HTML tags to test for cross-site scripting vulnerabilities."
+    },
+    {
+      "id": 461100,
+      "name": "Fuzzy Input",
+      "description": "Send large or randomly generated payloads to test input validation and stability."
+    },
+    {
+      "id": 461101,
+      "name": "Command Injection",
+      "description": "Insert shell commands into inputs to test for command execution vulnerabilities."
+    },
+    {
+      "id": 461102,
+      "name": "JSON Injection",
+      "description": "Insert malicious or unexpected JSON structures to test parsing and validation."
+    },
+    {
+      "id": 461103,
+      "name": "NoSQL Injection",
+      "description": "Provide NoSQL-specific malicious queries or operators to test for injection vulnerabilities."
+    },
+    {
+      "id": 461104,
+      "name": "Other",
+      "description": "Test cases not classified under existing categories."
+    }
+  ],
+  "projectAssociations": [],
+  "moduleSettings": [
+    {
+      "id": "867727",
+      "name": "Default module",
+      "description": "",
+      "moduleVariables": [],
+      "openApiInfo": {}
+    }
+  ]
+}

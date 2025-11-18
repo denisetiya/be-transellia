@@ -2,15 +2,18 @@ import type { Request, Response } from 'express';
 import logger from '../../lib/lib.logger';
 import response from '../../lib/lib.response';
 import SubscriptionService from './subscription.service';
-import { 
-    createSubscriptionSchema, 
-    updateSubscriptionSchema, 
+import {
+    createSubscriptionSchema,
+    updateSubscriptionSchema,
     subscriptionIdSchema,
     type iCreateSubscription,
     type iUpdateSubscription,
     type iSubscriptionId
 } from './subscription.validation';
+import { subscriptionPaymentSchema, type SubscriptionPaymentRequest } from './subscription.payment.validation';
 import { createValidationErrorResponse } from '../../lib/lib.validation';
+import UsersService from '../users/users.service';
+import PaymentHistoryService from '../payment-history/payment-history.service';
 
 export default class SubscriptionController {
 
@@ -40,14 +43,11 @@ export default class SubscriptionController {
             const result = await SubscriptionService.getAllSubscriptions(page, limit);
             
             if (result.success) {
-                logger.info(`Successfully fetched ${result.data.length} subscriptions (Page: ${page}, Limit: ${limit})`);
+                logger.info(`Successfully fetched ${result.data.subscriptions.length} subscriptions (Page: ${page}, Limit: ${limit})`);
                 return response.success(
                     res,
-                    {
-                        subscriptions: result.data,
-                    },
-                    result.message,
-                    result.meta
+                    result.data,
+                    result.message
                 );
             }
             
@@ -378,6 +378,153 @@ export default class SubscriptionController {
                 res,
                 "Terjadi kesalahan sistem. Silakan coba lagi."
             );
+        }
+    }
+    
+    /**
+     * Process subscription payment
+     * This endpoint allows users to pay for a subscription
+     */
+    static async payForSubscription(req: Request, res: Response) {
+        try {
+            logger.info('Processing subscription payment');
+            
+            // Get user ID from JWT token
+            const userId = req.user?.id;
+            if (!userId) {
+                return response.unauthorized(
+                    res,
+                    "User ID not found in token"
+                );
+            }
+            
+            const data: SubscriptionPaymentRequest = req.body;
+            
+            // Validate request body
+            const validation = subscriptionPaymentSchema.safeParse({ body: data });
+            if (!validation.success) {
+                logger.warn('Subscription payment validation failed');
+                const validationError = createValidationErrorResponse(validation.error);
+                return response.badRequest(
+                    res,
+                    validationError.message,
+                    validationError.errors
+                );
+            }
+            
+            const { subscriptionId, paymentMethod, bank, walletProvider } = validation.data.body;
+            
+            // Process subscription payment using service
+            const result = await SubscriptionService.processSubscriptionPayment(
+                userId,
+                subscriptionId,
+                paymentMethod,
+                bank,
+                walletProvider
+            );
+            
+            if (result.success) {
+                logger.info(`Subscription payment successful for user ${userId}`);
+                return response.success(
+                    res,
+                    {
+                        payment: result.data
+                    },
+                    result.message
+                );
+            }
+            
+            // Handle service errors
+            switch (result.errorType) {
+                case 'NOT_FOUND':
+                    return response.notFound(
+                        res,
+                        result.message
+                    );
+                case 'VALIDATION_ERROR':
+                    return response.badRequest(
+                        res,
+                        result.message
+                    );
+                default:
+                    return response.internalServerError(
+                        res,
+                        result.message
+                    );
+            }
+            
+        } catch (error) {
+            // Handle unexpected exceptions
+            logger.error(`Unexpected error in payForSubscription: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            return response.internalServerError(
+                res,
+                "Terjadi kesalahan sistem. Silakan coba lagi."
+            );
+        }
+    }
+    
+    /**
+     * Handle payment webhook from Midtrans
+     * This endpoint receives payment status updates from Midtrans
+     */
+    static async handlePaymentWebhook(req: Request, res: Response) {
+        try {
+            logger.info('Received payment webhook from Midtrans');
+            
+            // Get the raw body for signature verification
+            const rawBody = req.body;
+            
+            // TODO: Verify webhook signature for security
+            // This would involve checking the signature header against a hash of the body
+            
+            // Parse the JSON payload
+            let payload;
+            try {
+                payload = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
+            } catch (error : unknown) {
+                console.error(error)
+                logger.error('Failed to parse webhook payload');
+                return res.status(400).send('Invalid JSON payload');
+            }
+            
+            const { order_id, transaction_status, fraud_status } = payload;
+            
+            logger.info(`Processing webhook for order ${order_id} with status ${transaction_status}`);
+            
+            // Check if this is a subscription payment
+            if (order_id.startsWith('SUB_')) {
+                // Extract user ID and subscription ID from order ID
+                const parts = order_id.split('_');
+                if (parts.length >= 3) {
+                    const subscriptionId = parts[1];
+                    const userId = parts[2];
+                    
+                    // Check if payment was successful
+                    if (transaction_status === 'settlement' && fraud_status === 'accept') {
+                        // Update user's subscription
+                        const userUpdated = await UsersService.updateUserSubscription(userId, subscriptionId);
+                        
+                        if (userUpdated) {
+                            logger.info(`Successfully updated user subscription via webhook - User ID: ${userId}, Subscription ID: ${subscriptionId}`);
+                        } else {
+                            logger.error(`Failed to update user subscription via webhook - User ID: ${userId}, Subscription ID: ${subscriptionId}`);
+                        }
+                        
+                        // Update payment history status
+                        await PaymentHistoryService.updatePaymentHistoryStatus(order_id, 'settlement', payload.transaction_id);
+                    } else if (transaction_status === 'expire' || transaction_status === 'cancel' || transaction_status === 'deny') {
+                        // Update payment history status for failed payments
+                        await PaymentHistoryService.updatePaymentHistoryStatus(order_id, transaction_status);
+                    }
+                }
+            }
+            
+            // Send success response to Midtrans
+            res.status(200).send('OK');
+            
+        } catch (error) {
+            logger.error(`Error processing payment webhook: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            res.status(500).send('Internal Server Error');
         }
     }
 }

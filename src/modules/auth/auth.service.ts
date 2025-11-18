@@ -63,6 +63,8 @@ export default class AuthService {
 
             // Verify password using the same deterministic salt
             const salt = this.generateSaltFromEmail(data.email);
+            logger.info(`Stored password: ${user.password}`);
+            logger.info(`Generated salt: ${salt}`);
             const isPasswordValid = Hash.verifyPassword(data.password, user.password, salt);
             
             if (!isPasswordValid) {

@@ -1,21 +1,16 @@
 import logger from '../../lib/lib.logger';
-import { type SubscriptionError, SubscriptionErrorType } from './subscription.type';
+import { type UsersError, UsersErrorType } from './users.type';
 
-export default class SubscriptionErrorHandler {
+export default class UsersErrorHandler {
 
     /**
      * Create standardized error response for service layer
      */
     static createServiceError(
-        errorType: SubscriptionErrorType,
-        message: string,
-        id?: string
-    ): SubscriptionError {
-        if (id) {
-            logger.warn(`Subscription service error - ID: ${id}, Type: ${errorType}, Message: ${message}`);
-        } else {
-            logger.warn(`Subscription service error - Type: ${errorType}, Message: ${message}`);
-        }
+        errorType: UsersErrorType,
+        message: string
+    ): UsersError {
+        logger.warn(`Users service error - Type: ${errorType}, Message: ${message}`);
 
         return {
             data: null,
@@ -28,7 +23,7 @@ export default class SubscriptionErrorHandler {
     /**
      * Handle database errors in service layer
      */
-    static handleDatabaseError(error: unknown, operation: string): SubscriptionError {
+    static handleDatabaseError(error: unknown, operation: string): UsersError {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         logger.error(`Database error during ${operation} - Error: ${errorMessage}`);
 
@@ -36,7 +31,7 @@ export default class SubscriptionErrorHandler {
             // Handle connection errors
             if (error.message.includes('connection')) {
                 return this.createServiceError(
-                    SubscriptionErrorType.DATABASE_CONNECTION,
+                    UsersErrorType.DATABASE_CONNECTION,
                     "Koneksi database bermasalah. Silakan coba lagi."
                 );
             }
@@ -44,7 +39,7 @@ export default class SubscriptionErrorHandler {
             // Handle timeout errors
             if (error.message.includes('timeout')) {
                 return this.createServiceError(
-                    SubscriptionErrorType.TIMEOUT,
+                    UsersErrorType.TIMEOUT,
                     "Request timeout. Silakan coba lagi."
                 );
             }
@@ -52,31 +47,24 @@ export default class SubscriptionErrorHandler {
 
         // Default error response
         return this.createServiceError(
-            SubscriptionErrorType.INTERNAL_ERROR,
+            UsersErrorType.INTERNAL_ERROR,
             "Terjadi kesalahan sistem. Silakan coba lagi."
         );
     }
 
     /**
-     * Create standard error responses for common subscription scenarios
+     * Create standard error responses for common users scenarios
      */
     static readonly errors = {
-        notFound: (id?: string) => 
+        unauthorized: () => 
             this.createServiceError(
-                SubscriptionErrorType.NOT_FOUND,
-                "Subscription tidak ditemukan.",
-                id
-            ),
-
-        validationError: (message: string) => 
-            this.createServiceError(
-                SubscriptionErrorType.VALIDATION_ERROR,
-                message
+                UsersErrorType.UNAUTHORIZED,
+                "Anda tidak memiliki izin untuk mengakses resource ini."
             ),
 
         internalError: () => 
             this.createServiceError(
-                SubscriptionErrorType.INTERNAL_ERROR,
+                UsersErrorType.INTERNAL_ERROR,
                 "Terjadi kesalahan sistem. Silakan coba lagi."
             )
     };

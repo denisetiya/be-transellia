@@ -9,6 +9,7 @@ function validateEnvVar(varName: string, value: string | undefined): string {
   return value;
 }
 
+ 
 let env : {
   NODE_ENV: string;
   SALT : string;
@@ -18,9 +19,11 @@ let env : {
   FIREBASE_PROJECT_ID: string;
   FIREBASE_CLIENT_EMAIL: string;
   FIREBASE_PRIVATE_KEY: string;
+  MIDTRANS_SERVER_KEY : string;
+  MIDTRANS_CLIENT_KEY :  string
 };
 
- if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production') {
     env = {
       NODE_ENV: process.env.NODE_ENV,
       PORT: process.env.PORT ? Number(process.env.PORT) : 3000,
@@ -30,6 +33,8 @@ let env : {
       FIREBASE_PROJECT_ID: validateEnvVar('FIREBASE_PROJECT_ID', process.env.FIREBASE_PROJECT_ID),
       FIREBASE_CLIENT_EMAIL: validateEnvVar('FIREBASE_CLIENT_EMAIL', process.env.FIREBASE_CLIENT_EMAIL),
       FIREBASE_PRIVATE_KEY: validateEnvVar('FIREBASE_PRIVATE_KEY', process.env.FIREBASE_PRIVATE_KEY),
+      MIDTRANS_SERVER_KEY : validateEnvVar('MIDTRANS_SERVER_KEY', process.env.MIDTRANS_SERVER_KEY),
+      MIDTRANS_CLIENT_KEY :  validateEnvVar('MIDTRANS_CLIENT_KEY', process.env.MIDTRANS_CLIENT_KEY),
     };
  } else {
     env = {
@@ -41,6 +46,8 @@ let env : {
       FIREBASE_PROJECT_ID: validateEnvVar('FIREBASE_PROJECT_ID_DEV', process.env.FIREBASE_PROJECT_ID_DEV),
       FIREBASE_CLIENT_EMAIL: validateEnvVar('FIREBASE_CLIENT_EMAIL_DEV', process.env.FIREBASE_CLIENT_EMAIL_DEV),
       FIREBASE_PRIVATE_KEY: validateEnvVar('FIREBASE_PRIVATE_KEY_DEV', process.env.FIREBASE_PRIVATE_KEY_DEV),
+      MIDTRANS_SERVER_KEY : validateEnvVar('MIDTRANS_SERVER_KEY_DEV', process.env.MIDTRANS_SERVER_KEY_DEV),
+      MIDTRANS_CLIENT_KEY :  validateEnvVar('MIDTRANS_CLIENT_KEY_DEV', process.env.MIDTRANS_CLIENT_KEY_DEV),
     };
  }
 
