@@ -1,4 +1,5 @@
-import express, { type Application, type Request, type Response, type NextFunction } from 'express';
+import express from 'express';
+import type { Application, Request, Response, NextFunction } from 'express';
 import appRouter from './app.routes';
 import env from './config/env.config';
 import logger from './lib/lib.logger';
