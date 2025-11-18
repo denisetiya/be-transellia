@@ -1,7 +1,7 @@
 import prisma from '../../config/prisma.config';
 import logger from "../../lib/lib.logger";
 import PaymentHistoryErrorHandler from "./payment-history.error";
-import { PaymentHistoriesResult, PaymentHistoryResult } from "./payment-history.type";
+import { PaymentHistoriesResult, PaymentHistoryResult, iPaymentHistory } from "./payment-history.type";
 
 export default class PaymentHistoryService {
   /**
@@ -246,7 +246,7 @@ export default class PaymentHistoryService {
   /**
    * Create a new payment history record
    */
-  static async createPaymentHistory(paymentData: any): Promise<PaymentHistoryResult> {
+  static async createPaymentHistory(paymentData: Omit<iPaymentHistory, 'id' | 'createdAt' | 'updatedAt'>): Promise<PaymentHistoryResult> {
     try {
       logger.info("Attempting to create payment history in database");
       

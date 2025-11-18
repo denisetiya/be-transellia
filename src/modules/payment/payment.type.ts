@@ -71,6 +71,7 @@ export interface PaymentSuccess {
     redirectUrl?: string;
     qrCode?: string;
     vaNumber?: string;
+    bank?: string;
     expiryTime?: string;
   };
   message: string;

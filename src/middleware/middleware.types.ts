@@ -6,6 +6,11 @@ declare global {
     namespace Express {
         interface Request {
             user?: iUser;
+            headers: Record<string, string | string[] | undefined>;
+            method: string;
+        }
+        interface Response {
+            header: (field: string, val?: string | number | string[]) => this | string | undefined;
         }
     }
 }

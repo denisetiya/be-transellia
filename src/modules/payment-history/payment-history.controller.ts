@@ -2,7 +2,6 @@ import type { Request, Response } from 'express';
 import logger from '../../lib/lib.logger';
 import response from '../../lib/lib.response';
 import PaymentHistoryService from './payment-history.service';
-import { createValidationErrorResponse } from '../../lib/lib.validation';
 
 export default class PaymentHistoryController {
   static async getAllPaymentHistories(req: Request, res: Response) {

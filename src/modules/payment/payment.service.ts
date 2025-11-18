@@ -1,6 +1,6 @@
 import midtransApi from '../../config/midtrans.config';
 import logger from '../../lib/lib.logger';
-import { PaymentRequest, PaymentResult, MidtransPaymentResponse } from './payment.type';
+import { PaymentRequest, PaymentResult, MidtransPaymentResponse, PaymentSuccess } from './payment.type';
 import PaymentErrorHandler from './payment.error';
 
 export default class PaymentService {
@@ -14,7 +14,7 @@ export default class PaymentService {
       logger.info(`Creating payment for order ${paymentRequest.orderId} using ${paymentRequest.paymentMethod}`);
 
       // Prepare Midtrans payment parameters based on payment method
-      let midtransParams: any = {
+      const midtransParams: Record<string, unknown> = {
         transaction_details: {
           order_id: paymentRequest.orderId,
           gross_amount: paymentRequest.amount
@@ -96,7 +96,7 @@ export default class PaymentService {
       logger.info(`Payment created successfully for order ${paymentRequest.orderId}`);
 
       // Process response based on payment method
-      const resultData: any = {
+      const resultData: PaymentSuccess['data'] = {
         orderId: response.order_id,
         paymentId: response.transaction_id
       };
@@ -142,13 +142,13 @@ export default class PaymentService {
       logger.info(`Checking payment status for order ${orderId}`);
 
       // Get transaction status from Midtrans
-      // @ts-ignore: Midtrans CoreApi types may not be fully defined
+      // @ts-expect-error: Midtrans CoreApi types may not be fully defined
       const response: MidtransPaymentResponse = await midtransApi.status(orderId);
       
       logger.info(`Payment status retrieved for order ${orderId}`);
 
       // Create result data matching PaymentSuccess data structure
-      const resultData: any = {
+      const resultData: PaymentSuccess['data'] = {
         orderId: response.order_id,
         paymentId: response.transaction_id
       };
