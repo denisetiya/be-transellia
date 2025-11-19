@@ -1,7 +1,7 @@
 import express, { type Router } from "express";
 import UsersController from './users.controller';
 import { unifiedAuthMiddleware } from '../../middleware';
-import adminMiddleware from "@/middleware/admin.middleware";
+import adminMiddleware from "../../middleware/admin.middleware";
 
 const usersRouter: Router = express.Router();
 
