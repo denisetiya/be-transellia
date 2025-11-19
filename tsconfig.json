@@ -41,7 +41,9 @@
     "node_modules", 
     "**/*.spec.ts", 
     "dist",
-    "prisma/migrations/**/*"
+    "prisma/migrations/**/*",
+    "generated/**/*",
+    "src/generated/**/*"
   ],
   "include": ["src/**/*"]
 }
