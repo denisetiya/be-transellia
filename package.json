@@ -3,15 +3,15 @@
   "module": "index.ts",
   "private": true,
   "version": "0.0.1",
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.22.0",
   "author": {
     "name": "deni setiya",
     "email": "denisetiya009@gmail.com"
   },
   "scripts": {
-    "dev": "pnpm tsx --watch src/app.ts",
-    "start": "node dist/app.js",
-    "start:prod": "node dist/app.js",
+    "dev": "pnpm tsx --watch src/index.ts",
+    "start": "node dist/index.js",
+    "start:prod": "node dist/index.js",
     "build": "pnpm run lint && tsc && cp -r src/generated dist/",
     "postinstall": "pnpm db:generate",
     "type-check": "pnpm tsc --noEmit",
@@ -25,31 +25,31 @@
     "db:studio": "pnpm prisma studio"
   },
   "devDependencies": {
-    "@eslint/js": "^9.33.0",
-    "@eslint/json": "^0.13.1",
+    "@eslint/js": "^9.39.1",
+    "@eslint/json": "^0.14.0",
     "@types/bun": "latest",
-    "@types/express": "4.17.23",
+    "@types/express": "5.0.5",
     "@types/midtrans-client": "^1.4.0",
-    "@types/node": "^20.14.0",
-    "eslint": "^9.33.0",
-    "globals": "^16.3.0",
-    "jiti": "^2.5.1",
-    "prisma": "^6.14.0",
-    "tsx": "^4.16.0",
-    "typescript": "^5.5.0",
-    "typescript-eslint": "^8.40.0"
+    "@types/node": "^24.10.1",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "jiti": "^2.6.1",
+    "prisma": "^7.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.47.0"
   },
   "peerDependencies": {
     "typescript": "^5.5.0"
   },
   "dependencies": {
-    "@prisma/client": "6.14.0",
+    "@prisma/client": "7.0.0",
     "cookie": "^1.0.2",
-    "dotenv": "^17.2.1",
-    "express": "4.21.2",
-    "firebase-admin": "^13.4.0",
+    "dotenv": "^17.2.3",
+    "express": "5.1.0",
+    "firebase-admin": "^13.6.0",
     "midtrans-client": "^1.4.3",
-    "zod": "^4.0.17",
+    "zod": "^4.1.12",
     "zustand": "^5.0.8"
   }
 }
