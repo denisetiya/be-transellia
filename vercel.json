@@ -5,7 +5,8 @@
         "src": "src/app.ts",
         "use": "@vercel/node",
         "config": {
-          "maxDuration": 10
+          "maxDuration": 10,
+          "includeFiles": ["src/**/*", "prisma/**/*", "package.json", "pnpm-lock.yaml"]
         }
       }
     ],
@@ -14,6 +15,11 @@
         "src": "/(.*)",
         "dest": "src/app.ts"
       }
-    ]
+    ],
+    "functions": {
+      "src/app.ts": {
+        "maxDuration": 10
+      }
+    }
   }
   
