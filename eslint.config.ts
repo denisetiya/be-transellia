@@ -18,6 +18,7 @@ export default defineConfig([
       "dist/**/*",
       "node_modules/**/*",
       "src/generated/**/*",
+      "generated/**/*",
       "prisma/migrations/**/*",
       "*.config.js",
       "*.config.mjs",
