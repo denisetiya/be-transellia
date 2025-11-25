@@ -15,7 +15,7 @@ app.use(express.urlencoded({ extended: true, limit: '30mb' })); // Parse URL-enc
 
 // CORS middleware (if needed)
 app.use((req: Request, res: Response, next: NextFunction) => {
-  const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+  const allowedOrigins = env.CORS_ORIGINS.split(',');
   const origin = req.headers.origin;
   
   if (allowedOrigins.includes(origin || '')) {
