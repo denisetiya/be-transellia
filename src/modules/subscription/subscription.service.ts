@@ -1,4 +1,6 @@
-import prisma from '../../config/prisma.config';
+import { db } from '../../config/drizzle.config';
+import { eq, count } from 'drizzle-orm';
+import { subscriptionLists } from '../../db/schema';
 import logger from "../../lib/lib.logger";
 import { iCreateSubscription, iUpdateSubscription, iSubscriptionId } from "./subscription.validation";
 import SubscriptionErrorHandler from "./subscription.error";
@@ -6,6 +8,7 @@ import { SubscriptionResult, SubscriptionsResult, UsersBySubscriptionResult, Sub
 import PaymentService from '../payment/payment.service';
 import UsersService from '../users/users.service';
 import PaymentHistoryService from '../payment-history/payment-history.service';
+import { generateId } from '../../lib/lib.id.generator';
 
 export default class SubscriptionService {
     
@@ -13,35 +16,30 @@ export default class SubscriptionService {
         try {
             logger.info(`Attempting to fetch subscriptions from database - Page: ${page}, Limit: ${limit}`);
             
-            // Check database connection
-            await prisma.$connect();
-            
-            // Calculate skip value for pagination
-            const skip = (page - 1) * limit;
+            // Calculate offset value for pagination
+            const offset = (page - 1) * limit;
             
             // Fetch subscriptions with pagination
-            const [subscriptions, total] = await Promise.all([
-                prisma.subscriptionList.findMany({
-                    orderBy: {
-                        createdAt: 'asc'
-                    },
-                    skip,
-                    take: limit
-                }),
-                prisma.subscriptionList.count()
+            const [subscriptionsData, total] = await Promise.all([
+                db.select().from(subscriptionLists)
+                    .orderBy(subscriptionLists.createdAt)
+                    .limit(limit)
+                    .offset(offset),
+                
+                db.select({ count: count() }).from(subscriptionLists).then(result => result[0]?.count || 0)
             ]);
             
             // Calculate total pages
             const totalPages = Math.ceil(total / limit);
             
-            logger.info(`Successfully fetched ${subscriptions.length} subscriptions (Page: ${page}, Limit: ${limit}, Total: ${total})`);
+            logger.info(`Successfully fetched ${subscriptionsData.length} subscriptions (Page: ${page}, Limit: ${limit}, Total: ${total})`);
             
             return {
                 data: {
-                    subscriptions: subscriptions.map(sub => ({
+                    subscriptions: subscriptionsData.map(sub => ({
                         id: sub.id,
                         name: sub.name,
-                        price: sub.price,
+                        price: Number(sub.price),
                         currency: sub.currency,
                         description: sub.description,
                         duration: {
@@ -51,7 +49,7 @@ export default class SubscriptionService {
                         features: sub.features,
                         status: sub.status,
                         subscribersCount: sub.subscribersCount,
-                        totalRevenue: sub.totalRevenue,
+                        totalRevenue: Number(sub.totalRevenue),
                         createdAt: sub.createdAt,
                         updatedAt: sub.updatedAt
                     })),
@@ -68,8 +66,6 @@ export default class SubscriptionService {
             
         } catch (error) {
             return SubscriptionErrorHandler.handleDatabaseError(error, 'fetch all subscriptions');
-        } finally {
-            await prisma.$disconnect();
         }
     }
     
@@ -77,27 +73,27 @@ export default class SubscriptionService {
         try {
             logger.info(`Attempting to fetch subscription from database - ID: ${data.id}`);
             
-            // Check database connection
-            await prisma.$connect();
+            const subscriptionResult = await db.select().from(subscriptionLists)
+                .where(eq(subscriptionLists.id, data.id))
+                .limit(1);
             
-            const subscription = await prisma.subscriptionList.findUnique({
-                where: {
-                    id: data.id
-                }
-            });
-            
-            if (!subscription) {
+            if (!subscriptionResult.length) {
                 logger.warn(`Subscription not found - ID: ${data.id}`);
                 return SubscriptionErrorHandler.errors.notFound(data.id);
             }
             
+            const subscription = subscriptionResult[0];
+            if (!subscription) {
+                logger.error(`Unexpected error: Subscription data is null after successful query - ID: ${data.id}`);
+                return SubscriptionErrorHandler.handleDatabaseError(new Error("Subscription data is null"), 'fetch subscription by ID');
+            }
             logger.info(`Successfully fetched subscription - ID: ${subscription.id}`);
             
             return {
                 data: {
                     id: subscription.id,
                     name: subscription.name,
-                    price: subscription.price,
+                    price: Number(subscription.price),
                     currency: subscription.currency,
                     description: subscription.description,
                     duration: {
@@ -107,7 +103,7 @@ export default class SubscriptionService {
                     features: subscription.features,
                     status: subscription.status,
                     subscribersCount: subscription.subscribersCount,
-                    totalRevenue: subscription.totalRevenue,
+                    totalRevenue: Number(subscription.totalRevenue),
                     createdAt: subscription.createdAt,
                     updatedAt: subscription.updatedAt
                 },
@@ -117,8 +113,6 @@ export default class SubscriptionService {
             
         } catch (error) {
             return SubscriptionErrorHandler.handleDatabaseError(error, `fetch subscription by ID: ${data.id}`);
-        } finally {
-            await prisma.$disconnect();
         }
     }
     
@@ -126,21 +120,22 @@ export default class SubscriptionService {
         try {
             logger.info("Attempting to create subscription in database");
             
-            // Check database connection
-            await prisma.$connect();
+            const [subscription] = await db.insert(subscriptionLists).values({
+                id: generateId(),
+                name: data.name,
+                price: data.price.toString(),
+                currency: data.currency || 'IDR',
+                description: data.description,
+                durationValue: data.duration?.value || 1,
+                durationUnit: data.duration?.unit || 'months',
+                features: data.features,
+                status: (data.status || 'active') as "active" | "inactive" | "pending"
+            }).returning();
             
-            const subscription = await prisma.subscriptionList.create({
-                data: {
-                    name: data.name,
-                    price: data.price,
-                    currency: data.currency || 'IDR',
-                    description: data.description,
-                    durationValue: data.duration?.value || 1,
-                    durationUnit: data.duration?.unit || 'months',
-                    features: data.features,
-                    status: data.status || 'active'
-                }
-            });
+            if (!subscription) {
+                logger.error(`Failed to create subscription`);
+                return SubscriptionErrorHandler.handleDatabaseError(new Error("Failed to create subscription"), 'create subscription');
+            }
             
             logger.info(`Successfully created subscription - ID: ${subscription.id}`);
             
@@ -148,7 +143,7 @@ export default class SubscriptionService {
                 data: {
                     id: subscription.id,
                     name: subscription.name,
-                    price: subscription.price,
+                    price: Number(subscription.price),
                     currency: subscription.currency,
                     description: subscription.description,
                     duration: {
@@ -158,7 +153,7 @@ export default class SubscriptionService {
                     features: subscription.features,
                     status: subscription.status,
                     subscribersCount: subscription.subscribersCount,
-                    totalRevenue: subscription.totalRevenue,
+                    totalRevenue: Number(subscription.totalRevenue),
                     createdAt: subscription.createdAt,
                     updatedAt: subscription.updatedAt
                 },
@@ -168,8 +163,6 @@ export default class SubscriptionService {
             
         } catch (error) {
             return SubscriptionErrorHandler.handleDatabaseError(error, 'create subscription');
-        } finally {
-            await prisma.$disconnect();
         }
     }
     
@@ -177,56 +170,81 @@ export default class SubscriptionService {
         try {
             logger.info(`Attempting to update subscription in database - ID: ${id}`);
             
-            // Check database connection
-            await prisma.$connect();
-            
             // Check if subscription exists
-            const existingSubscription = await prisma.subscriptionList.findUnique({
-                where: {
-                    id: id
-                }
-            });
+            const existingSubscription = await db.select().from(subscriptionLists)
+                .where(eq(subscriptionLists.id, id))
+                .limit(1);
             
-            if (!existingSubscription) {
+            if (!existingSubscription.length) {
                 logger.warn(`Subscription not found for update - ID: ${id}`);
                 return SubscriptionErrorHandler.errors.notFound(id);
             }
             
-            const subscription = await prisma.subscriptionList.update({
-                where: {
-                    id: id
-                },
-                data: {
-                    name: data.name,
-                    price: data.price,
-                    currency: data.currency,
-                    description: data.description,
-                    durationValue: data.duration?.value,
-                    durationUnit: data.duration?.unit,
-                    features: data.features,
-                    status: data.status
+            const updateData: Partial<{
+                name: string;
+                price: string;
+                currency: string;
+                description: string | null;
+                durationValue: number;
+                durationUnit: "days" | "weeks" | "months" | "years";
+                features: string[];
+                status: "active" | "inactive" | "pending";
+            }> = {};
+            if (data.name !== undefined) updateData.name = data.name;
+            if (data.price !== undefined) updateData.price = data.price.toString();
+            if (data.currency !== undefined) updateData.currency = data.currency;
+            if (data.description !== undefined) updateData.description = data.description;
+            if (data.duration?.value !== undefined) updateData.durationValue = data.duration.value;
+            if (data.duration?.unit !== undefined) updateData.durationUnit = data.duration.unit;
+            if (data.features !== undefined) updateData.features = data.features;
+            // Convert "draft" status to "pending" for database compatibility
+            if (data.status !== undefined) {
+                if (data.status === "draft") {
+                    updateData.status = "pending";
+                } else {
+                    updateData.status = data.status as "active" | "inactive" | "pending";
                 }
-            });
+            }
             
-            logger.info(`Successfully updated subscription - ID: ${subscription.id}`);
+            const subscription = await db.update(subscriptionLists)
+                .set(updateData)
+                .where(eq(subscriptionLists.id, id))
+                .returning();
+            
+            if (!subscription.length) {
+                logger.error(`Failed to update subscription - ID: ${id}`);
+                return SubscriptionErrorHandler.handleDatabaseError(new Error("Failed to update subscription"), 'update subscription');
+            }
+            
+            const updatedSubscription = subscription[0];
+            if (!updatedSubscription) {
+                logger.error(`Failed to retrieve updated subscription - ID: ${id}`);
+                return SubscriptionErrorHandler.handleDatabaseError(new Error("Failed to retrieve updated subscription"), 'update subscription');
+            }
+            
+            logger.info(`Successfully updated subscription - ID: ${updatedSubscription.id}`);
+            if (!updatedSubscription) {
+                logger.error(`Failed to retrieve updated subscription - ID: ${id}`);
+                return SubscriptionErrorHandler.handleDatabaseError(new Error("Failed to retrieve updated subscription"), 'update subscription');
+            }
             
             return {
                 data: {
-                    id: subscription.id,
-                    name: subscription.name,
-                    price: subscription.price,
-                    currency: subscription.currency,
-                    description: subscription.description,
+                    id: updatedSubscription.id,
+                    name: updatedSubscription.name,
+                    price: Number(updatedSubscription.price),
+                    currency: updatedSubscription.currency,
+                    description: updatedSubscription.description,
                     duration: {
-                        value: subscription.durationValue,
-                        unit: subscription.durationUnit
+                        value: updatedSubscription.durationValue,
+                        unit: updatedSubscription.durationUnit
                     },
-                    features: subscription.features,
-                    status: subscription.status,
-                    subscribersCount: subscription.subscribersCount,
-                    totalRevenue: subscription.totalRevenue,
-                    createdAt: subscription.createdAt,
-                    updatedAt: subscription.updatedAt
+                    features: updatedSubscription.features,
+                    status: updatedSubscription.status,
+                    subscribersCount: updatedSubscription.subscribersCount,
+                    totalRevenue: Number(updatedSubscription.totalRevenue),
+                    createdAt: updatedSubscription.createdAt,
+                    updatedAt: updatedSubscription.updatedAt
                 },
                 message: "Berhasil memperbarui subscription",
                 success: true
@@ -234,8 +252,6 @@ export default class SubscriptionService {
             
         } catch (error) {
             return SubscriptionErrorHandler.handleDatabaseError(error, `update subscription ID: ${id}`);
-        } finally {
-            await prisma.$disconnect();
         }
     }
     
@@ -243,46 +259,43 @@ export default class SubscriptionService {
         try {
             logger.info(`Attempting to delete subscription from database - ID: ${data.id}`);
             
-            // Check database connection
-            await prisma.$connect();
-            
             // Check if subscription exists
-            const existingSubscription = await prisma.subscriptionList.findUnique({
-                where: {
-                    id: data.id
-                }
-            });
+            const existingSubscription = await db.select().from(subscriptionLists)
+                .where(eq(subscriptionLists.id, data.id))
+                .limit(1);
             
-            if (!existingSubscription) {
+            if (!existingSubscription.length) {
                 logger.warn(`Subscription not found for deletion - ID: ${data.id}`);
                 return SubscriptionErrorHandler.errors.notFound(data.id);
             }
             
-            await prisma.subscriptionList.delete({
-                where: {
-                    id: data.id
-                }
-            });
+            await db.delete(subscriptionLists).where(eq(subscriptionLists.id, data.id));
             
             logger.info(`Successfully deleted subscription - ID: ${data.id}`);
             
+            const deletedSubscription = existingSubscription[0];
+            if (!deletedSubscription) {
+                logger.error(`Failed to retrieve deleted subscription - ID: ${data.id}`);
+                return SubscriptionErrorHandler.handleDatabaseError(new Error("Failed to retrieve deleted subscription"), 'delete subscription');
+            }
+            
             return {
                 data: {
-                    id: existingSubscription.id,
-                    name: existingSubscription.name,
-                    price: existingSubscription.price,
-                    currency: existingSubscription.currency,
-                    description: existingSubscription.description,
+                    id: deletedSubscription.id,
+                    name: deletedSubscription.name,
+                    price: Number(deletedSubscription.price),
+                    currency: deletedSubscription.currency,
+                    description: deletedSubscription.description,
                     duration: {
-                        value: existingSubscription.durationValue,
-                        unit: existingSubscription.durationUnit
+                        value: deletedSubscription.durationValue,
+                        unit: deletedSubscription.durationUnit
                     },
-                    features: existingSubscription.features,
-                    status: existingSubscription.status,
-                    subscribersCount: existingSubscription.subscribersCount,
-                    totalRevenue: existingSubscription.totalRevenue,
-                    createdAt: existingSubscription.createdAt,
-                    updatedAt: existingSubscription.updatedAt
+                    features: deletedSubscription.features,
+                    status: deletedSubscription.status,
+                    subscribersCount: deletedSubscription.subscribersCount,
+                    totalRevenue: Number(deletedSubscription.totalRevenue),
+                    createdAt: deletedSubscription.createdAt,
+                    updatedAt: deletedSubscription.updatedAt
                 },
                 message: "Berhasil menghapus subscription",
                 success: true
@@ -290,8 +303,6 @@ export default class SubscriptionService {
             
         } catch (error) {
             return SubscriptionErrorHandler.handleDatabaseError(error, `delete subscription ID: ${data.id}`);
-        } finally {
-            await prisma.$disconnect();
         }
     }
     
@@ -299,50 +310,57 @@ export default class SubscriptionService {
         try {
             logger.info(`Attempting to fetch users with subscription ID: ${subscriptionId}`);
             
-            // Check database connection
-            await prisma.$connect();
+            // Import users table here to avoid circular dependency
+            const { users, userDetails } = await import('../../db/schema');
             
             // Check if subscription exists
-            const subscription = await prisma.subscriptionList.findUnique({
-                where: {
-                    id: subscriptionId
-                }
-            });
+            const subscription = await db.select().from(subscriptionLists)
+                .where(eq(subscriptionLists.id, subscriptionId))
+                .limit(1);
             
-            if (!subscription) {
+            if (!subscription.length) {
                 logger.warn(`Subscription not found - ID: ${subscriptionId}`);
                 return SubscriptionErrorHandler.errors.notFound(subscriptionId);
             }
             
             // Fetch users with this subscription
-            const users = await prisma.user.findMany({
-                where: {
-                    subscriptionId: subscriptionId
-                },
-                include: {
-                    UserDetails: true
+            const usersData = await db.select({
+                id: users.id,
+                email: users.email,
+                role: users.role,
+                subscriptionId: users.subscriptionId,
+                isEmployee: users.isEmployee,
+                userDetails: {
+                    id: userDetails.id,
+                    userId: userDetails.userId,
+                    name: userDetails.name,
+                    phoneNumber: userDetails.phoneNumber,
+                    imageProfile: userDetails.imageProfile,
+                    createdAt: userDetails.createdAt,
+                    updatedAt: userDetails.updatedAt
                 }
-            });
+            })
+                .from(users)
+                .leftJoin(userDetails, eq(users.id, userDetails.userId))
+                .where(eq(users.subscriptionId, subscriptionId));
             
-            logger.info(`Successfully fetched ${users.length} users with subscription ID: ${subscriptionId}`);
+            logger.info(`Successfully fetched ${usersData.length} users with subscription ID: ${subscriptionId}`);
             
             return {
-                data: users.map(user => ({
+                data: usersData.map(user => ({
                     id: user.id,
                     email: user.email,
                     role: user.role,
                     subscriptionId: user.subscriptionId,
-                    UserDetails: user.UserDetails,
+                    UserDetails: user.userDetails,
                     isEmployee: user.isEmployee
                 })),
-                message: `Berhasil mendapatkan ${users.length} pengguna dengan subscription ID: ${subscriptionId}`,
+                message: `Berhasil mendapatkan ${usersData.length} pengguna dengan subscription ID: ${subscriptionId}`,
                 success: true
             };
             
         } catch (error) {
             return SubscriptionErrorHandler.handleDatabaseError(error, `fetch users by subscription ID: ${subscriptionId}`);
-        } finally {
-            await prisma.$disconnect();
         }
     }
     
@@ -362,17 +380,15 @@ export default class SubscriptionService {
         try {
             logger.info(`Processing subscription payment - User ID: ${userId}, Subscription ID: ${subscriptionId}`);
             
-            // Check database connection
-            await prisma.$connect();
+            // Import users and userDetails tables here to avoid circular dependency
+            const { users, userDetails } = await import('../../db/schema');
             
             // Check if subscription exists
-            const subscription = await prisma.subscriptionList.findUnique({
-                where: {
-                    id: subscriptionId
-                }
-            });
+            const subscriptionResult = await db.select().from(subscriptionLists)
+                .where(eq(subscriptionLists.id, subscriptionId))
+                .limit(1);
             
-            if (!subscription) {
+            if (!subscriptionResult.length) {
                 logger.warn(`Subscription not found - ID: ${subscriptionId}`);
                 return {
                     data: null,
@@ -382,17 +398,30 @@ export default class SubscriptionService {
                 };
             }
             
-            // Get user details
-            const user = await prisma.user.findUnique({
-                where: {
-                    id: userId
-                },
-                include: {
-                    UserDetails: true
-                }
-            });
+            const subscription = subscriptionResult[0];
+            if (!subscription) {
+                logger.error(`Unexpected error: Subscription data is null after successful query - ID: ${subscriptionId}`);
+                return {
+                    data: null,
+                    message: `Unexpected error with subscription ID ${subscriptionId}`,
+                    success: false,
+                    errorType: 'INTERNAL_ERROR'
+                };
+            }
             
-            if (!user) {
+            // Get user details
+            const userResult = await db.select({
+                id: users.id,
+                email: users.email,
+                name: userDetails.name,
+                phoneNumber: userDetails.phoneNumber
+            })
+                .from(users)
+                .leftJoin(userDetails, eq(users.id, userDetails.userId))
+                .where(eq(users.id, userId))
+                .limit(1);
+            
+            if (!userResult.length) {
                 logger.warn(`User not found - ID: ${userId}`);
                 return {
                     data: null,
@@ -402,17 +431,28 @@ export default class SubscriptionService {
                 };
             }
             
+            const user = userResult[0];
+            if (!user) {
+                logger.error(`Unexpected error: User data is null after successful query - ID: ${userId}`);
+                return {
+                    data: null,
+                    message: `Unexpected error with user ID ${userId}`,
+                    success: false,
+                    errorType: 'INTERNAL_ERROR'
+                };
+            }
+            
             // Create payment request
             const paymentRequest = {
                 orderId: `SUB_${subscriptionId}_${userId}_${Date.now()}`,
-                amount: subscription.price,
+                amount: Number(subscription.price), // Convert decimal to number
                 currency: 'IDR',
                 customer: {
                     id: userId,
                     email: user.email,
-                    firstName: user.UserDetails?.name || '',
+                    firstName: user.name || '',
                     lastName: '',
-                    phone: user.UserDetails?.phoneNumber || ''
+                    phone: user.phoneNumber || ''
                 },
                 paymentMethod,
                 bank,
@@ -428,7 +468,7 @@ export default class SubscriptionService {
                 subscriptionId: subscriptionId,
                 orderId: paymentRequest.orderId,
                 paymentId: paymentResult.data?.paymentId || null,
-                amount: subscription.price,
+                amount: Number(subscription.price), // Convert decimal to number
                 currency: paymentRequest.currency,
                 paymentMethod: paymentRequest.paymentMethod,
                 status: paymentResult.success ? 'pending' : 'failed',
@@ -465,7 +505,7 @@ export default class SubscriptionService {
                             paymentId: paymentResult.data?.paymentId,
                             subscriptionId: subscription.id,
                             subscriptionName: subscription.name,
-                            amount: subscription.price,
+                            amount: Number(subscription.price), // Convert decimal to number
                             redirectUrl: paymentResult.data?.redirectUrl,
                             qrCode: paymentResult.data?.qrCode,
                             vaNumber: paymentResult.data?.vaNumber,
@@ -500,8 +540,6 @@ export default class SubscriptionService {
                 success: false,
                 errorType: 'INTERNAL_ERROR'
             };
-        } finally {
-            await prisma.$disconnect();
         }
     }
 }

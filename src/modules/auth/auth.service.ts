@@ -1,12 +1,15 @@
 import type { iLogin, iRegister } from "./auth.validation";
 import type { iUser } from "./auth.type";
-import prisma from '../../config/prisma.config';
 import Hash from "../../lib/lib.hash";
 import Jwt from "../../lib/lib.jwt";
 import env from "../../config/env.config";
 import logger from "../../lib/lib.logger";
 import AuthErrorHandler from "./auth.error";
 import type { AuthLoginResult, AuthRegisterResult } from "./auth.type";
+import { db } from "../../config/drizzle.config";
+import { eq } from "drizzle-orm";
+import { users, userDetails } from "../../db/schema";
+import { generateId } from "../../lib/lib.id.generator";
 
 export default class AuthService {
     
@@ -31,62 +34,61 @@ export default class AuthService {
         try {
             logger.info(`Attempting to find user in database - Email: ${data.email}`);
 
-            // Check database connection
-            await prisma.$connect();
-
-            const user = await prisma.user.findUnique({
-                where: {
-                    email: data.email
-                },
-                select :{
-                    id: true,
-                    password: true,
-                    email: true,
-                    role: true,
-                    subscriptionId : true,
-                    UserDetails : {
-                        select: {
-                            name: true,
-                            imageProfile: true,
-                            phoneNumber: true,
-                            address: true
-                        }
-                    },
-                    isEmployee: true
+            const user = await db.select({
+                id: users.id,
+                password: users.password,
+                email: users.email,
+                role: users.role,
+                subscriptionId: users.subscriptionId,
+                isEmployee: users.isEmployee,
+                userDetails: {
+                    name: userDetails.name,
+                    imageProfile: userDetails.imageProfile,
+                    phoneNumber: userDetails.phoneNumber,
+                    address: userDetails.address
                 }
-            });
+            })
+                .from(users)
+                .leftJoin(userDetails, eq(users.id, userDetails.userId))
+                .where(eq(users.email, data.email))
+                .limit(1);
 
-            if (!user) {
+            if (!user.length) {
                 logger.warn(`User not found - Email: ${data.email}`);
                 return AuthErrorHandler.errors.invalidCredentials(data.email);
             }
 
+            const userData = user[0];
+            if (!userData) {
+                logger.error(`Unexpected error: User data is null after successful query - Email: ${data.email}`);
+                return AuthErrorHandler.handleDatabaseError(new Error("User data is null"), data.email, 'login');
+            }
+
             // Verify password using the same deterministic salt
             const salt = this.generateSaltFromEmail(data.email);
-            logger.info(`Stored password: ${user.password}`);
+            logger.info(`Stored password: ${userData.password}`);
             logger.info(`Generated salt: ${salt}`);
-            const isPasswordValid = Hash.verifyPassword(data.password, user.password, salt);
+            const isPasswordValid = Hash.verifyPassword(data.password, userData.password, salt);
             
             if (!isPasswordValid) {
-                logger.warn(`Invalid password attempt - Email: ${data.email}, UserID: ${user.id}`);
+                logger.warn(`Invalid password attempt - Email: ${data.email}, UserID: ${userData.id}`);
                 return AuthErrorHandler.errors.invalidCredentials(data.email);
             }
 
-
             // Generate token
-            const token = this.generateToken(user);
+            const token = this.generateToken(userData);
             
-            logger.info(`User login successful - UserID: ${user.id}, Email: ${user.email}`);
+            logger.info(`User login successful - UserID: ${userData.id}, Email: ${userData.email}`);
 
             return {
                 data: {
-                    id: user.id,
-                    email: user.email,
-                    password: user.password,
-                    role: user.role,
-                    subscriptionId : user.subscriptionId,
-                    UserDetails: user.UserDetails,
-                    isEmployee: user.isEmployee
+                    id: userData.id,
+                    email: userData.email,
+                    password: userData.password,
+                    role: userData.role,
+                    subscriptionId: userData.subscriptionId,
+                    UserDetails: userData.userDetails,
+                    isEmployee: userData.isEmployee
                 },
                 message: "Login berhasil",
                 token: token ? token : null,
@@ -95,8 +97,6 @@ export default class AuthService {
 
         } catch (error) {
             return AuthErrorHandler.handleDatabaseError(error, data.email, 'login');
-        } finally {
-            await prisma.$disconnect();
         }
     }
 
@@ -104,17 +104,12 @@ export default class AuthService {
         try {
             logger.info(`Attempting user registration - Email: ${data.email}`);
 
-            // Check database connection
-            await prisma.$connect();
-
             // Check if user already exists
-            const existingUser = await prisma.user.findUnique({
-                where: {
-                    email: data.email
-                }
-            });
+            const existingUser = await db.select().from(users)
+                .where(eq(users.email, data.email))
+                .limit(1);
 
-            if (existingUser) {
+            if (existingUser.length) {
                 logger.warn(`Registration attempted with existing email - Email: ${data.email}`);
                 return AuthErrorHandler.errors.emailAlreadyExists(data.email);
             }
@@ -123,35 +118,34 @@ export default class AuthService {
             const salt = this.generateSaltFromEmail(data.email);
             const hashedPassword = Hash.hash(data.password, salt);
             
+            const userId = generateId();
+            const userDetailsId = generateId();
 
             // Create user with transaction for data consistency
-            const newUser = await prisma.$transaction(async (tx) => {
-                const user = await tx.user.create({
-                    data: {                        
-                        email: data.email,
-                        password: hashedPassword,
-                        role: 'USER',
-                        isEmployee: false,
-                        UserDetails: {
-                            create: {
-                                name: data.name
-                            }
-                        },
-                        subscription : {
-                            connect: {
-                                id: 'cmesn7has0000d5etmb7jw21s'
-                            }
-
-                        }
-                    },
-                    include: {
-                        UserDetails: true,
-                    }
+            const newUser = await db.transaction(async (tx) => {
+                // Create user details first
+                await tx.insert(userDetails).values({
+                    id: userDetailsId,
+                    userId: userId,
+                    name: data.name
                 });
 
-                return user;
+                // Then create user
+                const user = await tx.insert(users).values({
+                    id: userId,
+                    email: data.email,
+                    password: hashedPassword,
+                    role: 'user', // Use lowercase to match schema enum
+                    isEmployee: false,
+                    subscriptionId: 'cmesn7has0000d5etmb7jw21s' // Default subscription
+                }).returning();
+
+                return user[0];
             });
 
+            if (!newUser) {
+                throw new Error('Failed to create user');
+            }
 
             // Generate token
             const token = this.generateToken(newUser);
@@ -164,6 +158,11 @@ export default class AuthService {
                 logger.info(`User registration successful - UserID: ${newUser.id}, Email: ${newUser.email}`);
             }
 
+            // Get user details for response
+            const userDetailsResult = await db.select().from(userDetails)
+                .where(eq(userDetails.userId, newUser.id))
+                .limit(1);
+
             return {
                 data: {
                     id: newUser.id,
@@ -171,7 +170,7 @@ export default class AuthService {
                     password: newUser.password,
                     role: newUser.role,
                     subscriptionId: newUser.subscriptionId || null,
-                    UserDetails: newUser.UserDetails,
+                    UserDetails: userDetailsResult[0] || null,
                     isEmployee: newUser.isEmployee
                 },
                 message: token ? "Registrasi berhasil" : "Registrasi berhasil, namun gagal membuat token. Silakan login kembali.",
@@ -181,8 +180,6 @@ export default class AuthService {
 
         } catch (error) {
             return AuthErrorHandler.handleDatabaseError(error, data.email, 'registration');
-        } finally {
-            await prisma.$disconnect();
         }
     }
 }
