@@ -59,4 +59,4 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   });
 }
 // Export app for Vercel
-export { app };
+export default app;
