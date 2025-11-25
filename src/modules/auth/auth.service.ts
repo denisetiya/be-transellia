@@ -1,5 +1,6 @@
 import type { iLogin, iRegister } from "./auth.validation";
 import type { iUser } from "./auth.type";
+import { AuthErrorType } from "./auth.type";
 import Hash from "../../lib/lib.hash";
 import Jwt from "../../lib/lib.jwt";
 import env from "../../config/env.config";
@@ -96,6 +97,33 @@ export default class AuthService {
             };
 
         } catch (error) {
+            // Enhanced error logging for production debugging
+            if (error instanceof Error) {
+                logger.error(`Login error details - Email: ${data.email}, Error: ${error.message}, Stack: ${error.stack}`);
+                
+                // Check for specific database connection issues
+                if (error.message.includes('connection') || error.message.includes('timeout') || error.message.includes('ECONNREFUSED')) {
+                    logger.error(`Database connection issue detected - Email: ${data.email}, Error: ${error.message}`);
+                    return AuthErrorHandler.createServiceError(
+                        AuthErrorType.DATABASE_CONNECTION,
+                        "Database connection failed. Please try again later.",
+                        data.email
+                    );
+                }
+                
+                // Check for query execution issues
+                if (error.message.includes('query') || error.message.includes('syntax')) {
+                    logger.error(`Database query issue detected - Email: ${data.email}, Error: ${error.message}`);
+                    return AuthErrorHandler.createServiceError(
+                        AuthErrorType.INTERNAL_ERROR,
+                        "Database query failed. Please try again later.",
+                        data.email
+                    );
+                }
+            } else {
+                logger.error(`Login error details - Email: ${data.email}, Error: ${JSON.stringify(error)}`);
+            }
+            
             return AuthErrorHandler.handleDatabaseError(error, data.email, 'login');
         }
     }
