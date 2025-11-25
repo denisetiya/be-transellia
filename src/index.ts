@@ -4,6 +4,8 @@ import appRouter from './app.routes';
 import env from './config/env.config';
 import logger from './lib/lib.logger';
 import GlobalErrorHandler from './lib/lib.error.handler';
+
+
 // Import type extensions to ensure they are loaded
 import './middleware/middleware.types';
 
@@ -57,4 +59,4 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   });
 }
 // Export app for Vercel
-export default app;
+export { app };
