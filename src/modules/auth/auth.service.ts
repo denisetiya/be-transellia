@@ -83,197 +83,260 @@ export default class AuthService {
     }
 
     static async login(data: iLogin): Promise<AuthLoginResult> {
-        try {
-            logger.info(`Attempting to find user in database - Email: ${data.email}`);
-            logger.info(`Database query execution starting - Environment: ${process.env.NODE_ENV}`);
-            
-            // Log connection details for debugging
-            logger.info(`Database URL configured: ${!!process.env.DATABASE_URL}`);
-            logger.info(`Node environment: ${process.env.NODE_ENV}`);
-            logger.info(`Vercel environment: ${process.env.VERCEL ? 'Yes' : 'No'}`);
-            logger.info(`Vercel region: ${process.env.VERCEL_REGION || 'Unknown'}`);
-
-            let user: UserWithDetails[];
-            
-            // Try the optimized query first, fallback to simpler query if it fails
+        const maxRetries = process.env.VERCEL || process.env.NODE_ENV === 'production' ? 3 : 1;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                logger.info(`Attempting complex JOIN query - Email: ${data.email}`);
-                logger.info(`Query timestamp: ${new Date().toISOString()}`);
+                logger.info(`Login attempt ${attempt}/${maxRetries} for email: ${data.email}`);
+                logger.info(`Database query execution starting - Environment: ${process.env.NODE_ENV}`);
                 
-                user = await db.select({
-                    id: users.id,
-                    password: users.password,
-                    email: users.email,
-                    role: users.role,
-                    subscriptionId: users.subscriptionId,
-                    isEmployee: users.isEmployee,
-                    userDetails: {
-                        name: userDetails.name,
-                        imageProfile: userDetails.imageProfile,
-                        phoneNumber: userDetails.phoneNumber,
-                        address: userDetails.address
-                    }
-                })
-                    .from(users)
-                    .leftJoin(userDetails, eq(users.id, userDetails.userId))
-                    .where(eq(users.email, data.email))
-                    .limit(1);
+                // Log connection details for debugging
+                logger.info(`Database URL configured: ${!!process.env.DATABASE_URL}`);
+                logger.info(`Node environment: ${process.env.NODE_ENV}`);
+                logger.info(`Vercel environment: ${process.env.VERCEL ? 'Yes' : 'No'}`);
+                logger.info(`Vercel region: ${process.env.VERCEL_REGION || 'Unknown'}`);
+
+                let user: UserWithDetails[];
+            
+                // SERVERLESS-OPTIMIZED APPROACH: Skip complex JOIN entirely for serverless environments
+                if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+                    logger.info(`Using serverless-optimized query approach - Email: ${data.email}`);
                     
-                logger.info(`Complex JOIN query completed successfully - Results count: ${user.length}`);
-            } catch (queryError) {
-                logger.error(`Complex JOIN query failed - Email: ${data.email}`);
-                logger.error(`Error type: ${queryError instanceof Error ? queryError.constructor.name : 'Unknown'}`);
-                logger.error(`Error message: ${queryError instanceof Error ? queryError.message : 'Unknown'}`);
-                logger.error(`Error stack: ${queryError instanceof Error ? queryError.stack : 'No stack trace'}`);
-                logger.error(`Query timestamp: ${new Date().toISOString()}`);
-                
-                // Check for specific error patterns
-                if (queryError instanceof Error) {
-                    if (queryError.message.includes('PostgresJsPreparedQuery')) {
-                        logger.error(`Prepared statement error detected - This confirms serverless compatibility issue`);
+                    try {
+                        // Step 1: Simple user query without JOIN (most reliable for serverless)
+                        logger.info(`Step 1: Executing simple user query - Email: ${data.email}`);
+                        const simpleUser = await db.select({
+                            id: users.id,
+                            password: users.password,
+                            email: users.email,
+                            role: users.role,
+                            subscriptionId: users.subscriptionId,
+                            isEmployee: users.isEmployee
+                        })
+                            .from(users)
+                            .where(eq(users.email, data.email))
+                            .limit(1) as SimpleUser[];
+                        
+                        logger.info(`Step 1 completed - Found ${simpleUser.length} users`);
+                        
+                        if (simpleUser.length > 0 && simpleUser[0]) {
+                            // Step 2: Separate user details query
+                            logger.info(`Step 2: Executing user details query - UserID: ${simpleUser[0].id}`);
+                            
+                            try {
+                                const userDetailsResult = await db.select()
+                                    .from(userDetails)
+                                    .where(eq(userDetails.userId, simpleUser[0].id))
+                                    .limit(1) as UserDetails[];
+                                
+                                logger.info(`Step 2 completed - Found ${userDetailsResult.length} user details`);
+                                
+                                user = [{
+                                    ...simpleUser[0],
+                                    userDetails: userDetailsResult[0] || null
+                                }];
+                                
+                                logger.info(`Serverless query strategy completed successfully - Final results count: ${user.length}`);
+                            } catch (detailsError) {
+                                logger.warn(`User details query failed, proceeding with user data only - Error: ${detailsError instanceof Error ? detailsError.message : 'Unknown'}`);
+                                
+                                user = [{
+                                    ...simpleUser[0],
+                                    userDetails: null
+                                }];
+                            }
+                        } else {
+                            user = [];
+                            logger.info(`No user found with email: ${data.email}`);
+                        }
+                    } catch (queryError) {
+                        logger.error(`Serverless query approach failed - Email: ${data.email}`);
+                        logger.error(`Error type: ${queryError instanceof Error ? queryError.constructor.name : 'Unknown'}`);
+                        logger.error(`Error message: ${queryError instanceof Error ? queryError.message : 'Unknown'}`);
+                        throw queryError;
                     }
-                    if (queryError.message.includes('connection') || queryError.message.includes('timeout')) {
-                        logger.error(`Connection issue detected - This confirms connection pooling problem`);
+                } else {
+                    // DEVELOPMENT APPROACH: Try complex JOIN first, fallback to simple queries
+                    logger.info(`Using development query approach - Email: ${data.email}`);
+                    
+                    try {
+                        logger.info(`Attempting complex JOIN query - Email: ${data.email}`);
+                        logger.info(`Query timestamp: ${new Date().toISOString()}`);
+                        
+                        user = await db.select({
+                            id: users.id,
+                            password: users.password,
+                            email: users.email,
+                            role: users.role,
+                            subscriptionId: users.subscriptionId,
+                            isEmployee: users.isEmployee,
+                            userDetails: {
+                                name: userDetails.name,
+                                imageProfile: userDetails.imageProfile,
+                                phoneNumber: userDetails.phoneNumber,
+                                address: userDetails.address
+                            }
+                        })
+                            .from(users)
+                            .leftJoin(userDetails, eq(users.id, userDetails.userId))
+                            .where(eq(users.email, data.email))
+                            .limit(1);
+                            
+                        logger.info(`Complex JOIN query completed successfully - Results count: ${user.length}`);
+                    } catch (queryError) {
+                        logger.error(`Complex JOIN query failed, falling back to simple queries - Email: ${data.email}`);
+                        logger.error(`Error type: ${queryError instanceof Error ? queryError.constructor.name : 'Unknown'}`);
+                        logger.error(`Error message: ${queryError instanceof Error ? queryError.message : 'Unknown'}`);
+                        
+                        // Fallback to simple queries
+                        const simpleUser = await db.select({
+                            id: users.id,
+                            password: users.password,
+                            email: users.email,
+                            role: users.role,
+                            subscriptionId: users.subscriptionId,
+                            isEmployee: users.isEmployee
+                        })
+                            .from(users)
+                            .where(eq(users.email, data.email))
+                            .limit(1) as SimpleUser[];
+                        
+                        if (simpleUser.length > 0 && simpleUser[0]) {
+                            const userDetailsResult = await db.select()
+                                .from(userDetails)
+                                .where(eq(userDetails.userId, simpleUser[0].id))
+                                .limit(1) as UserDetails[];
+                            
+                            user = [{
+                                ...simpleUser[0],
+                                userDetails: userDetailsResult[0] || null
+                            }];
+                        } else {
+                            user = [];
+                        }
+                        
+                        logger.info(`Fallback query strategy completed - Final results count: ${user.length}`);
                     }
                 }
+
+                if (!user.length) {
+                    logger.warn(`User not found - Email: ${data.email}`);
+                    return AuthErrorHandler.errors.invalidCredentials(data.email);
+                }
+
+                const userData = user[0];
+                if (!userData) {
+                    logger.error(`Unexpected error: User data is null after successful query - Email: ${data.email}`);
+                    return AuthErrorHandler.handleDatabaseError(new Error("User data is null"), data.email, 'login');
+                }
+
+                // Verify password using the same deterministic salt
+                const salt = this.generateSaltFromEmail(data.email);
+                logger.info(`Stored password: ${userData.password}`);
+                logger.info(`Generated salt: ${salt}`);
+                const isPasswordValid = Hash.verifyPassword(data.password, userData.password, salt);
                 
-                logger.warn(`Attempting fallback simple query without JOIN - Email: ${data.email}`);
+                if (!isPasswordValid) {
+                    logger.warn(`Invalid password attempt - Email: ${data.email}, UserID: ${userData.id}`);
+                    return AuthErrorHandler.errors.invalidCredentials(data.email);
+                }
+
+                // Generate token
+                const token = this.generateToken(userData);
                 
-                // Fallback: Simple query without complex JOIN to avoid prepared statement issues
-                try {
-                    const simpleUser = await db.select({
-                        id: users.id,
-                        password: users.password,
-                        email: users.email,
-                        role: users.role,
-                        subscriptionId: users.subscriptionId,
-                        isEmployee: users.isEmployee
-                    })
-                        .from(users)
-                        .where(eq(users.email, data.email))
-                        .limit(1) as SimpleUser[];
+                logger.info(`User login successful - UserID: ${userData.id}, Email: ${userData.email}`);
+
+                return {
+                    data: {
+                        id: userData.id,
+                        email: userData.email,
+                        password: userData.password,
+                        role: userData.role,
+                        subscriptionId: userData.subscriptionId,
+                        UserDetails: userData.userDetails,
+                        isEmployee: userData.isEmployee
+                    },
+                    message: "Login berhasil",
+                    token: token ? token : null,
+                    success: true
+                };
+
+            } catch (error) {
+                logger.error(`Login attempt ${attempt} failed - Email: ${data.email}`);
+                logger.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                
+                // If this is the last attempt, throw the error
+                if (attempt === maxRetries) {
+                    logger.error(`All ${maxRetries} login attempts failed - Email: ${data.email}`);
                     
-                    logger.info(`Simple user query completed - Results count: ${simpleUser.length}`);
-                    
-                    if (simpleUser.length > 0 && simpleUser[0]) {
-                        logger.info(`Attempting separate user details query - UserID: ${simpleUser[0].id}`);
+                    // Enhanced error logging for production debugging
+                    if (error instanceof Error) {
+                        logger.error(`Login error details - Email: ${data.email}, Error: ${error.message}, Stack: ${error.stack}`);
+                        logger.error(`Error name: ${error.name}`);
+                        logger.error(`Error constructor: ${error.constructor.name}`);
                         
-                        // Get user details separately
-                        const userDetailsResult = await db.select()
-                            .from(userDetails)
-                            .where(eq(userDetails.userId, simpleUser[0].id))
-                            .limit(1) as UserDetails[];
+                        // Log additional context for debugging
+                        logger.error(`Environment: ${process.env.NODE_ENV}`);
+                        logger.error(`Database URL configured: ${!!process.env.DATABASE_URL}`);
+                        logger.error(`Drizzle logger enabled: ${process.env.NODE_ENV === 'development'}`);
                         
-                        logger.info(`User details query completed - Results count: ${userDetailsResult.length}`);
+                        // Check for specific database connection issues
+                        if (error.message.includes('connection') || error.message.includes('timeout') || error.message.includes('ECONNREFUSED')) {
+                            logger.error(`Database connection issue detected - Email: ${data.email}, Error: ${error.message}`);
+                            return AuthErrorHandler.createServiceError(
+                                AuthErrorType.DATABASE_CONNECTION,
+                                "Database connection failed. Please try again later.",
+                                data.email
+                            );
+                        }
                         
-                        user = [{
-                            ...simpleUser[0],
-                            userDetails: userDetailsResult[0] || null
-                        }];
+                        // Check for query execution issues
+                        if (error.message.includes('query') || error.message.includes('syntax') || error.message.includes('Failed query')) {
+                            logger.error(`Database query issue detected - Email: ${data.email}, Error: ${error.message}`);
+                            logger.error(`Query execution failed - This might be a prepared statement or connection pooling issue`);
+                            return AuthErrorHandler.createServiceError(
+                                AuthErrorType.INTERNAL_ERROR,
+                                "Database query failed. Please try again later.",
+                                data.email
+                            );
+                        }
+                        
+                        // Check for Drizzle ORM specific issues
+                        if (error.message.includes('PostgresJsPreparedQuery') || error.message.includes('drizzle')) {
+                            logger.error(`Drizzle ORM issue detected - Email: ${data.email}, Error: ${error.message}`);
+                            logger.error(`This might be related to prepared statements or query caching`);
+                            return AuthErrorHandler.createServiceError(
+                                AuthErrorType.INTERNAL_ERROR,
+                                "Database ORM error. Please try again later.",
+                                data.email
+                            );
+                        }
                     } else {
-                        user = [];
+                        logger.error(`Login error details - Email: ${data.email}, Error: ${JSON.stringify(error)}`);
                     }
                     
-                    logger.info(`Fallback query strategy completed successfully - Final results count: ${user.length}`);
-                } catch (fallbackError) {
-                    logger.error(`Fallback query also failed - Email: ${data.email}`);
-                    logger.error(`Fallback error type: ${fallbackError instanceof Error ? fallbackError.constructor.name : 'Unknown'}`);
-                    logger.error(`Fallback error message: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown'}`);
-                    throw fallbackError; // Re-throw to be caught by outer catch block
-                }
-            }
-
-            if (!user.length) {
-                logger.warn(`User not found - Email: ${data.email}`);
-                return AuthErrorHandler.errors.invalidCredentials(data.email);
-            }
-
-            const userData = user[0];
-            if (!userData) {
-                logger.error(`Unexpected error: User data is null after successful query - Email: ${data.email}`);
-                return AuthErrorHandler.handleDatabaseError(new Error("User data is null"), data.email, 'login');
-            }
-
-            // Verify password using the same deterministic salt
-            const salt = this.generateSaltFromEmail(data.email);
-            logger.info(`Stored password: ${userData.password}`);
-            logger.info(`Generated salt: ${salt}`);
-            const isPasswordValid = Hash.verifyPassword(data.password, userData.password, salt);
-            
-            if (!isPasswordValid) {
-                logger.warn(`Invalid password attempt - Email: ${data.email}, UserID: ${userData.id}`);
-                return AuthErrorHandler.errors.invalidCredentials(data.email);
-            }
-
-            // Generate token
-            const token = this.generateToken(userData);
-            
-            logger.info(`User login successful - UserID: ${userData.id}, Email: ${userData.email}`);
-
-            return {
-                data: {
-                    id: userData.id,
-                    email: userData.email,
-                    password: userData.password,
-                    role: userData.role,
-                    subscriptionId: userData.subscriptionId,
-                    UserDetails: userData.userDetails,
-                    isEmployee: userData.isEmployee
-                },
-                message: "Login berhasil",
-                token: token ? token : null,
-                success: true
-            };
-
-        } catch (error) {
-            // Enhanced error logging for production debugging
-            if (error instanceof Error) {
-                logger.error(`Login error details - Email: ${data.email}, Error: ${error.message}, Stack: ${error.stack}`);
-                logger.error(`Error name: ${error.name}`);
-                logger.error(`Error constructor: ${error.constructor.name}`);
-                
-                // Log additional context for debugging
-                logger.error(`Environment: ${process.env.NODE_ENV}`);
-                logger.error(`Database URL configured: ${!!process.env.DATABASE_URL}`);
-                logger.error(`Drizzle logger enabled: ${process.env.NODE_ENV === 'development'}`);
-                
-                // Check for specific database connection issues
-                if (error.message.includes('connection') || error.message.includes('timeout') || error.message.includes('ECONNREFUSED')) {
-                    logger.error(`Database connection issue detected - Email: ${data.email}, Error: ${error.message}`);
-                    return AuthErrorHandler.createServiceError(
-                        AuthErrorType.DATABASE_CONNECTION,
-                        "Database connection failed. Please try again later.",
-                        data.email
-                    );
+                    return AuthErrorHandler.handleDatabaseError(error, data.email, 'login');
                 }
                 
-                // Check for query execution issues
-                if (error.message.includes('query') || error.message.includes('syntax') || error.message.includes('Failed query')) {
-                    logger.error(`Database query issue detected - Email: ${data.email}, Error: ${error.message}`);
-                    logger.error(`Query execution failed - This might be a prepared statement or connection pooling issue`);
-                    return AuthErrorHandler.createServiceError(
-                        AuthErrorType.INTERNAL_ERROR,
-                        "Database query failed. Please try again later.",
-                        data.email
-                    );
+                // For connection-related errors, wait before retrying
+                if (error instanceof Error && (
+                    error.message.includes('connection') ||
+                    error.message.includes('timeout') ||
+                    error.message.includes('PostgresJsPreparedQuery')
+                )) {
+                    const delay = Math.min(1000 * Math.pow(2, attempt - 1), 3000);
+                    logger.info(`Connection error detected, waiting ${delay}ms before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    continue;
                 }
                 
-                // Check for Drizzle ORM specific issues
-                if (error.message.includes('PostgresJsPreparedQuery') || error.message.includes('drizzle')) {
-                    logger.error(`Drizzle ORM issue detected - Email: ${data.email}, Error: ${error.message}`);
-                    logger.error(`This might be related to prepared statements or query caching`);
-                    return AuthErrorHandler.createServiceError(
-                        AuthErrorType.INTERNAL_ERROR,
-                        "Database ORM error. Please try again later.",
-                        data.email
-                    );
-                }
-            } else {
-                logger.error(`Login error details - Email: ${data.email}, Error: ${JSON.stringify(error)}`);
+                // For non-connection errors, don't retry
+                throw error;
             }
-            
-            return AuthErrorHandler.handleDatabaseError(error, data.email, 'login');
         }
+        
+        // This should never be reached, but TypeScript needs it
+        throw new Error('Unexpected error in login method');
     }
 
     static async register(data: iRegister): Promise<AuthRegisterResult> {

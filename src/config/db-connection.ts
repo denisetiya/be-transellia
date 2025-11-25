@@ -30,40 +30,37 @@ function createConnection() {
   logger.info(`Initializing database connection in ${process.env.NODE_ENV} mode`);
   logger.info(`Database URL (masked): ${connectionString.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@')}`);
   
-  // Configuration yang konsisten untuk development dan production
+  // Configuration yang dioptimalkan untuk Vercel serverless environment
   const connectionConfig = {
-    // Optimized untuk Vercel serverless environment
-    max: process.env.NODE_ENV === 'production' ? 1 : 1, // Force single connection for serverless
-    idle_timeout: process.env.NODE_ENV === 'production' ? 2 : 5, // Very short timeout for production
-    connect_timeout: 10, // Connect timeout dalam detik
+    // Serverless-optimized connection pooling
+    max: 1, // Force single connection untuk serverless stability
+    idle_timeout: 1, // Very short idle timeout untuk prevent connection leaks
+    connect_timeout: 5, // Faster connection timeout untuk serverless
     
-    // Opsi tambahan untuk serverless environments
-    prepare: false, // Disable prepared statements untuk compatibility yang lebih baik
-    max_lifetime: process.env.NODE_ENV === 'production' ? 10 : 30, // Very short lifetime for production
+    // Critical settings untuk serverless compatibility
+    prepare: false, // Disable prepared statements completely
+    max_lifetime: 5, // Very short connection lifetime
     
-    // Disable query caching untuk mencegah issues di serverless
-    cache: false,
-    
-    // SSL configuration untuk semua environment (keamanan lebih baik)
+    // SSL configuration
     ssl: { rejectUnauthorized: false },
     
-    // Callback untuk connection errors
+    // Enhanced error handling
     onnotice: (notice: unknown) => {
       logger.warn(`Database notice: ${notice}`);
     },
     
-    // Add debug callback for connection events
-    onparameter: (key: string, value: unknown) => {
-      logger.info(`Database parameter: ${key} = ${value}`);
-    },
-    
-    // Add connection lifecycle logging for debugging
+    // Connection lifecycle logging
     onconnect: () => {
-      logger.info('New database connection established');
+      logger.info('Database connection established');
     },
     
     onend: () => {
       logger.info('Database connection ended');
+    },
+    
+    // Error handling untuk connection issues
+    onerror: (error: unknown) => {
+      logger.error(`Database connection error: ${error instanceof Error ? error.message : 'Unknown'}`);
     },
   };
   
@@ -129,6 +126,47 @@ function createConnection() {
     logger.error(`  - Query timestamp: ${new Date().toISOString()}`);
     throw error;
   }
+}
+
+// Enhanced connection function with retry logic for serverless environments
+export async function createConnectionWithRetry(maxRetries: number = 3): Promise<ReturnType<typeof postgres>> {
+  const connectionString = validateDatabaseUrl();
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      logger.info(`Connection attempt ${attempt}/${maxRetries}`);
+      
+      const client = postgres(connectionString, {
+        // Serverless-optimized settings with retry-specific adjustments
+        max: 1,
+        idle_timeout: 1,
+        connect_timeout: 3, // Even shorter timeout for retries
+        prepare: false,
+        max_lifetime: 3,
+        ssl: { rejectUnauthorized: false },
+      });
+      
+      // Test the connection
+      await client`SELECT 1 as test`;
+      logger.info(`Connection successful on attempt ${attempt}`);
+      return client;
+      
+    } catch (error) {
+      logger.error(`Connection attempt ${attempt} failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      if (attempt === maxRetries) {
+        logger.error(`All ${maxRetries} connection attempts failed`);
+        throw error;
+      }
+      
+      // Exponential backoff for retries
+      const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+      logger.info(`Waiting ${delay}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw new Error(`Failed to establish database connection after ${maxRetries} attempts`);
 }
 
 // Create the client
