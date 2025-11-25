@@ -86,11 +86,20 @@ export default class AuthService {
         try {
             logger.info(`Attempting to find user in database - Email: ${data.email}`);
             logger.info(`Database query execution starting - Environment: ${process.env.NODE_ENV}`);
+            
+            // Log connection details for debugging
+            logger.info(`Database URL configured: ${!!process.env.DATABASE_URL}`);
+            logger.info(`Node environment: ${process.env.NODE_ENV}`);
+            logger.info(`Vercel environment: ${process.env.VERCEL ? 'Yes' : 'No'}`);
+            logger.info(`Vercel region: ${process.env.VERCEL_REGION || 'Unknown'}`);
 
             let user: UserWithDetails[];
             
             // Try the optimized query first, fallback to simpler query if it fails
             try {
+                logger.info(`Attempting complex JOIN query - Email: ${data.email}`);
+                logger.info(`Query timestamp: ${new Date().toISOString()}`);
+                
                 user = await db.select({
                     id: users.id,
                     password: users.password,
@@ -110,39 +119,68 @@ export default class AuthService {
                     .where(eq(users.email, data.email))
                     .limit(1);
                     
-                logger.info(`Database query completed successfully - Results count: ${user.length}`);
+                logger.info(`Complex JOIN query completed successfully - Results count: ${user.length}`);
             } catch (queryError) {
-                logger.warn(`Optimized query failed, trying fallback query - Error: ${queryError instanceof Error ? queryError.message : 'Unknown'}`);
+                logger.error(`Complex JOIN query failed - Email: ${data.email}`);
+                logger.error(`Error type: ${queryError instanceof Error ? queryError.constructor.name : 'Unknown'}`);
+                logger.error(`Error message: ${queryError instanceof Error ? queryError.message : 'Unknown'}`);
+                logger.error(`Error stack: ${queryError instanceof Error ? queryError.stack : 'No stack trace'}`);
+                logger.error(`Query timestamp: ${new Date().toISOString()}`);
                 
-                // Fallback: Simple query without complex JOIN to avoid prepared statement issues
-                const simpleUser = await db.select({
-                    id: users.id,
-                    password: users.password,
-                    email: users.email,
-                    role: users.role,
-                    subscriptionId: users.subscriptionId,
-                    isEmployee: users.isEmployee
-                })
-                    .from(users)
-                    .where(eq(users.email, data.email))
-                    .limit(1) as SimpleUser[];
-                
-                if (simpleUser.length > 0 && simpleUser[0]) {
-                    // Get user details separately
-                    const userDetailsResult = await db.select()
-                        .from(userDetails)
-                        .where(eq(userDetails.userId, simpleUser[0].id))
-                        .limit(1) as UserDetails[];
-                    
-                    user = [{
-                        ...simpleUser[0],
-                        userDetails: userDetailsResult[0] || null
-                    }];
-                } else {
-                    user = [];
+                // Check for specific error patterns
+                if (queryError instanceof Error) {
+                    if (queryError.message.includes('PostgresJsPreparedQuery')) {
+                        logger.error(`Prepared statement error detected - This confirms serverless compatibility issue`);
+                    }
+                    if (queryError.message.includes('connection') || queryError.message.includes('timeout')) {
+                        logger.error(`Connection issue detected - This confirms connection pooling problem`);
+                    }
                 }
                 
-                logger.info(`Fallback query completed successfully - Results count: ${user.length}`);
+                logger.warn(`Attempting fallback simple query without JOIN - Email: ${data.email}`);
+                
+                // Fallback: Simple query without complex JOIN to avoid prepared statement issues
+                try {
+                    const simpleUser = await db.select({
+                        id: users.id,
+                        password: users.password,
+                        email: users.email,
+                        role: users.role,
+                        subscriptionId: users.subscriptionId,
+                        isEmployee: users.isEmployee
+                    })
+                        .from(users)
+                        .where(eq(users.email, data.email))
+                        .limit(1) as SimpleUser[];
+                    
+                    logger.info(`Simple user query completed - Results count: ${simpleUser.length}`);
+                    
+                    if (simpleUser.length > 0 && simpleUser[0]) {
+                        logger.info(`Attempting separate user details query - UserID: ${simpleUser[0].id}`);
+                        
+                        // Get user details separately
+                        const userDetailsResult = await db.select()
+                            .from(userDetails)
+                            .where(eq(userDetails.userId, simpleUser[0].id))
+                            .limit(1) as UserDetails[];
+                        
+                        logger.info(`User details query completed - Results count: ${userDetailsResult.length}`);
+                        
+                        user = [{
+                            ...simpleUser[0],
+                            userDetails: userDetailsResult[0] || null
+                        }];
+                    } else {
+                        user = [];
+                    }
+                    
+                    logger.info(`Fallback query strategy completed successfully - Final results count: ${user.length}`);
+                } catch (fallbackError) {
+                    logger.error(`Fallback query also failed - Email: ${data.email}`);
+                    logger.error(`Fallback error type: ${fallbackError instanceof Error ? fallbackError.constructor.name : 'Unknown'}`);
+                    logger.error(`Fallback error message: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown'}`);
+                    throw fallbackError; // Re-throw to be caught by outer catch block
+                }
             }
 
             if (!user.length) {
@@ -328,7 +366,7 @@ export default class AuthService {
     }
 
     /**
-     * Diagnostic method to test database connectivity and query execution
+     * Enhanced diagnostic method to test database connectivity and query execution
      */
     static async diagnosticTest(): Promise<{ success: boolean; details: DiagnosticInfo }> {
         const diagnosticInfo: DiagnosticInfo = {
@@ -338,28 +376,63 @@ export default class AuthService {
             tests: []
         };
 
+        // Add environment info
+        logger.info(`=== DATABASE DIAGNOSTIC TEST START ===`);
+        logger.info(`Timestamp: ${diagnosticInfo.timestamp}`);
+        logger.info(`Environment: ${diagnosticInfo.environment}`);
+        logger.info(`Database URL configured: ${diagnosticInfo.databaseUrlConfigured}`);
+        logger.info(`Vercel environment: ${process.env.VERCEL ? 'Yes' : 'No'}`);
+        logger.info(`Vercel region: ${process.env.VERCEL_REGION || 'Unknown'}`);
+        logger.info(`Node.js version: ${process.version}`);
+
         try {
-            // Test 1: Simple connection test
+            // Test 1: Basic connection test with timing
             logger.info('Diagnostic: Testing basic database connection');
+            const startTime1 = Date.now();
             await db.select({ version: sql`version()` });
+            const endTime1 = Date.now();
             diagnosticInfo.tests.push({
                 name: 'Basic Connection',
                 success: true,
-                result: 'Connection successful'
+                result: `Connection successful in ${endTime1 - startTime1}ms`
             });
+            logger.info(`Basic connection test passed in ${endTime1 - startTime1}ms`);
 
-            // Test 2: Simple query on users table
+            // Test 2: Simple query on users table with timing
             logger.info('Diagnostic: Testing simple users table query');
-            await db.select({ count: sql`count(*)` }).from(users);
+            const startTime2 = Date.now();
+            const userCount = await db.select({ count: sql`count(*)` }).from(users);
+            const endTime2 = Date.now();
             diagnosticInfo.tests.push({
                 name: 'Users Count Query',
                 success: true,
-                result: 'Query executed successfully'
+                result: `Query executed successfully in ${endTime2 - startTime2}ms, found ${userCount[0]?.count || 0} users`
             });
+            logger.info(`Users count query passed in ${endTime2 - startTime2}ms`);
 
-            // Test 3: The exact query that's failing in login
-            logger.info('Diagnostic: Testing the exact login query');
-            const testEmail = 'admin@arunika.com';
+            // Test 3: Simple user query without JOIN (testing prepared statement issues)
+            logger.info('Diagnostic: Testing simple user query without JOIN');
+            const startTime3 = Date.now();
+            const simpleUserQuery = await db.select({
+                id: users.id,
+                email: users.email,
+                role: users.role
+            })
+                .from(users)
+                .where(eq(users.email, 'admin@transellia.com'))
+                .limit(1);
+            const endTime3 = Date.now();
+            diagnosticInfo.tests.push({
+                name: 'Simple User Query (no JOIN)',
+                success: true,
+                result: `Simple query successful in ${endTime3 - startTime3}ms, found ${simpleUserQuery.length} users`
+            });
+            logger.info(`Simple user query passed in ${endTime3 - startTime3}ms`);
+
+            // Test 4: The exact complex query that's failing in login
+            logger.info('Diagnostic: Testing the exact complex login query with JOIN');
+            const startTime4 = Date.now();
+            const testEmail = 'admin@transellia.com';
             const loginQuery = await db.select({
                 id: users.id,
                 password: users.password,
@@ -378,23 +451,58 @@ export default class AuthService {
                 .leftJoin(userDetails, eq(users.id, userDetails.userId))
                 .where(eq(users.email, testEmail))
                 .limit(1);
-
+            const endTime4 = Date.now();
             diagnosticInfo.tests.push({
-                name: 'Login Query (admin@arunika.com)',
+                name: 'Complex Login Query (with JOIN)',
                 success: true,
-                result: `Found ${loginQuery.length} users`
+                result: `Complex query successful in ${endTime4 - startTime4}ms, found ${loginQuery.length} users`
             });
+            logger.info(`Complex login query passed in ${endTime4 - startTime4}ms`);
 
+            // Test 5: Multiple rapid queries to test connection pooling
+            logger.info('Diagnostic: Testing multiple rapid queries');
+            const startTime5 = Date.now();
+            const promises = [];
+            for (let i = 0; i < 3; i++) {
+                promises.push(db.select({ count: sql`count(*)` }).from(users));
+            }
+            await Promise.all(promises);
+            const endTime5 = Date.now();
+            diagnosticInfo.tests.push({
+                name: 'Multiple Rapid Queries',
+                success: true,
+                result: `3 parallel queries completed in ${endTime5 - startTime5}ms`
+            });
+            logger.info(`Multiple rapid queries passed in ${endTime5 - startTime5}ms`);
+
+            logger.info(`=== DATABASE DIAGNOSTIC TEST COMPLETED SUCCESSFULLY ===`);
             return { success: true, details: diagnosticInfo };
 
         } catch (error) {
-            logger.error(`Diagnostic test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            logger.error(`=== DATABASE DIAGNOSTIC TEST FAILED ===`);
+            logger.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            logger.error(`Error type: ${error instanceof Error ? error.constructor.name : 'Unknown'}`);
+            logger.error(`Error stack: ${error instanceof Error ? error.stack : 'No stack trace'}`);
+            
             diagnosticInfo.tests.push({
                 name: 'Error Occurred',
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error',
                 stack: error instanceof Error ? error.stack : undefined
             });
+            
+            // Analyze error patterns
+            if (error instanceof Error) {
+                if (error.message.includes('PostgresJsPreparedQuery')) {
+                    logger.error(`DIAGNOSIS: This is a prepared statement issue - likely serverless compatibility problem`);
+                }
+                if (error.message.includes('connection') || error.message.includes('timeout')) {
+                    logger.error(`DIAGNOSIS: This is a connection pooling issue - likely configuration problem`);
+                }
+                if (error.message.includes('query') || error.message.includes('syntax')) {
+                    logger.error(`DIAGNOSIS: This is a query execution issue - possibly schema mismatch`);
+                }
+            }
             
             return { success: false, details: diagnosticInfo };
         }
