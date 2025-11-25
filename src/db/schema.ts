@@ -6,6 +6,7 @@ import {
   integer,
   decimal,
   pgEnum,
+  uniqueIndex,
   index
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
@@ -21,16 +22,19 @@ export const attendanceStatusEnum = pgEnum('attendanceStatus', ['present', 'abse
 // Users table
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
-  email: text('email').notNull().unique(),
+  email: text('email').notNull(),
   password: text('password').notNull(),
   role: roleEnum('role').default('user'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   isEmployee: boolean('is_employee').default(false),
   subscriptionId: text('subscription_id').references(() => subscriptionLists.id),
-}, (table) => ({
-  emailIdx: index('email_idx').on(table.email),
-}));
+}, (table) => {
+  return {
+    emailIdx: index('email_idx').on(table.email),
+    emailUnique: uniqueIndex('users_email_unique').on(table.email),
+  };
+});
 
 // SubscriptionList table
 export const subscriptionLists = pgTable('subscription_lists', {
@@ -47,45 +51,59 @@ export const subscriptionLists = pgTable('subscription_lists', {
   totalRevenue: decimal('total_revenue', { precision: 10, scale: 2 }).default('0').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    nameIdx: index('subscription_lists_name_idx').on(table.name),
+    statusIdx: index('subscription_lists_status_idx').on(table.status),
+  };
 });
 
 // UserDetails table
 export const userDetails = pgTable('user_details', {
   id: text('id').primaryKey(),
-  userId: text('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   name: text('name'),
   imageProfile: text('image_profile'),
   phoneNumber: text('phone_number'),
   address: text('address'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  userIdIdx: index('user_details_user_id_idx').on(table.userId),
-}));
+}, (table) => {
+  return {
+    userIdIdx: index('user_details_user_id_idx').on(table.userId),
+    userIdUnique: uniqueIndex('user_details_user_id_unique').on(table.userId),
+  };
+});
 
 // Store table
 export const stores = pgTable('stores', {
   id: text('id').primaryKey(),
-  userId: text('user_id').notNull().unique().references(() => users.id),
+  userId: text('user_id').notNull().references(() => users.id),
   address: text('address'),
   name: text('name').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  userIdIdx: index('stores_user_id_idx').on(table.userId),
-}));
+}, (table) => {
+  return {
+    userIdIdx: index('stores_user_id_idx').on(table.userId),
+    userIdUnique: uniqueIndex('stores_user_id_unique').on(table.userId),
+  };
+});
 
 // Employee table
 export const employees = pgTable('employees', {
   id: text('id').primaryKey(),
-  userId: text('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   storeId: text('store_id').notNull().references(() => stores.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  userIdIdx: index('employees_user_id_idx').on(table.userId),
-  storeIdIdx: index('employees_store_id_idx').on(table.storeId),
-}));
+}, (table) => {
+  return {
+    userIdIdx: index('employees_user_id_idx').on(table.userId),
+    storeIdIdx: index('employees_store_id_idx').on(table.storeId),
+    userIdUnique: uniqueIndex('employees_user_id_unique').on(table.userId),
+  };
+});
 
 // Product table
 export const products = pgTable('products', {
@@ -96,9 +114,12 @@ export const products = pgTable('products', {
   storeId: text('store_id').notNull().references(() => stores.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  storeIdIdx: index('products_store_id_idx').on(table.storeId),
-}));
+}, (table) => {
+  return {
+    storeIdIdx: index('products_store_id_idx').on(table.storeId),
+    nameIdx: index('products_name_idx').on(table.name),
+  };
+});
 
 // HistorySale table
 export const historySales = pgTable('history_sales', {
@@ -110,10 +131,13 @@ export const historySales = pgTable('history_sales', {
   totalPrice: decimal('total_price', { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  productIdIdx: index('history_sales_product_id_idx').on(table.productId),
-  employeeIdIdx: index('history_sales_employee_id_idx').on(table.employeeId),
-}));
+}, (table) => {
+  return {
+    productIdIdx: index('history_sales_product_id_idx').on(table.productId),
+    employeeIdIdx: index('history_sales_employee_id_idx').on(table.employeeId),
+    createdAtIdx: index('history_sales_created_at_idx').on(table.createdAt),
+  };
+});
 
 // Attendance table
 export const attendances = pgTable('attendances', {
@@ -124,17 +148,20 @@ export const attendances = pgTable('attendances', {
   image: text('image'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  employeeIdIdx: index('attendances_employee_id_idx').on(table.employeeId),
-  dateIdx: index('attendances_date_idx').on(table.date),
-}));
+}, (table) => {
+  return {
+    employeeIdIdx: index('attendances_employee_id_idx').on(table.employeeId),
+    dateIdx: index('attendances_date_idx').on(table.date),
+    employeeDateIdx: index('attendances_employee_date_idx').on(table.employeeId, table.date),
+  };
+});
 
 // PaymentHistory table
 export const paymentHistories = pgTable('payment_histories', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   subscriptionId: text('subscription_id').notNull().references(() => subscriptionLists.id),
-  orderId: text('order_id').notNull().unique(),
+  orderId: text('order_id').notNull(),
   paymentId: text('payment_id'),
   amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
   currency: text('currency').notNull(),
@@ -148,11 +175,14 @@ export const paymentHistories = pgTable('payment_histories', {
   redirectUrl: text('redirect_url'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  userIdIdx: index('payment_histories_user_id_idx').on(table.userId),
-  subscriptionIdIdx: index('payment_histories_subscription_id_idx').on(table.subscriptionId),
-  orderIdIdx: index('payment_histories_order_id_idx').on(table.orderId),
-}));
+}, (table) => {
+  return {
+    userIdIdx: index('payment_histories_user_id_idx').on(table.userId),
+    subscriptionIdIdx: index('payment_histories_subscription_id_idx').on(table.subscriptionId),
+    orderIdIdx: index('payment_histories_order_id_idx').on(table.orderId),
+    orderIdUnique: uniqueIndex('payment_histories_order_id_unique').on(table.orderId),
+  };
+});
 
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
