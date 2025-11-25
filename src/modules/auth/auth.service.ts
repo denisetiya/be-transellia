@@ -1,6 +1,57 @@
 import type { iLogin, iRegister } from "./auth.validation";
 import type { iUser } from "./auth.type";
 import { AuthErrorType } from "./auth.type";
+
+// Define proper types for query results
+interface UserWithDetails {
+    id: string;
+    password: string;
+    email: string;
+    role: string | null;
+    subscriptionId: string | null;
+    isEmployee: boolean | null;
+    userDetails: {
+        name: string | null;
+        imageProfile: string | null;
+        phoneNumber: string | null;
+        address: string | null;
+    } | null;
+}
+
+interface SimpleUser {
+    id: string;
+    password: string;
+    email: string;
+    role: string | null;
+    subscriptionId: string | null;
+    isEmployee: boolean | null;
+}
+
+interface UserDetails {
+    id: string;
+    userId: string;
+    name: string | null;
+    imageProfile: string | null;
+    phoneNumber: string | null;
+    address: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface DiagnosticTest {
+    name: string;
+    success: boolean;
+    result?: string;
+    error?: string;
+    stack?: string;
+}
+
+interface DiagnosticInfo extends Record<string, unknown> {
+    timestamp: string;
+    environment: string | undefined;
+    databaseUrlConfigured: boolean;
+    tests: DiagnosticTest[];
+}
 import Hash from "../../lib/lib.hash";
 import Jwt from "../../lib/lib.jwt";
 import env from "../../config/env.config";
@@ -8,7 +59,7 @@ import logger from "../../lib/lib.logger";
 import AuthErrorHandler from "./auth.error";
 import type { AuthLoginResult, AuthRegisterResult } from "./auth.type";
 import { db } from "../../config/drizzle.config";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { users, userDetails } from "../../db/schema";
 import { generateId } from "../../lib/lib.id.generator";
 
@@ -34,25 +85,65 @@ export default class AuthService {
     static async login(data: iLogin): Promise<AuthLoginResult> {
         try {
             logger.info(`Attempting to find user in database - Email: ${data.email}`);
+            logger.info(`Database query execution starting - Environment: ${process.env.NODE_ENV}`);
 
-            const user = await db.select({
-                id: users.id,
-                password: users.password,
-                email: users.email,
-                role: users.role,
-                subscriptionId: users.subscriptionId,
-                isEmployee: users.isEmployee,
-                userDetails: {
-                    name: userDetails.name,
-                    imageProfile: userDetails.imageProfile,
-                    phoneNumber: userDetails.phoneNumber,
-                    address: userDetails.address
+            let user: UserWithDetails[];
+            
+            // Try the optimized query first, fallback to simpler query if it fails
+            try {
+                user = await db.select({
+                    id: users.id,
+                    password: users.password,
+                    email: users.email,
+                    role: users.role,
+                    subscriptionId: users.subscriptionId,
+                    isEmployee: users.isEmployee,
+                    userDetails: {
+                        name: userDetails.name,
+                        imageProfile: userDetails.imageProfile,
+                        phoneNumber: userDetails.phoneNumber,
+                        address: userDetails.address
+                    }
+                })
+                    .from(users)
+                    .leftJoin(userDetails, eq(users.id, userDetails.userId))
+                    .where(eq(users.email, data.email))
+                    .limit(1);
+                    
+                logger.info(`Database query completed successfully - Results count: ${user.length}`);
+            } catch (queryError) {
+                logger.warn(`Optimized query failed, trying fallback query - Error: ${queryError instanceof Error ? queryError.message : 'Unknown'}`);
+                
+                // Fallback: Simple query without complex JOIN to avoid prepared statement issues
+                const simpleUser = await db.select({
+                    id: users.id,
+                    password: users.password,
+                    email: users.email,
+                    role: users.role,
+                    subscriptionId: users.subscriptionId,
+                    isEmployee: users.isEmployee
+                })
+                    .from(users)
+                    .where(eq(users.email, data.email))
+                    .limit(1) as SimpleUser[];
+                
+                if (simpleUser.length > 0 && simpleUser[0]) {
+                    // Get user details separately
+                    const userDetailsResult = await db.select()
+                        .from(userDetails)
+                        .where(eq(userDetails.userId, simpleUser[0].id))
+                        .limit(1) as UserDetails[];
+                    
+                    user = [{
+                        ...simpleUser[0],
+                        userDetails: userDetailsResult[0] || null
+                    }];
+                } else {
+                    user = [];
                 }
-            })
-                .from(users)
-                .leftJoin(userDetails, eq(users.id, userDetails.userId))
-                .where(eq(users.email, data.email))
-                .limit(1);
+                
+                logger.info(`Fallback query completed successfully - Results count: ${user.length}`);
+            }
 
             if (!user.length) {
                 logger.warn(`User not found - Email: ${data.email}`);
@@ -100,6 +191,13 @@ export default class AuthService {
             // Enhanced error logging for production debugging
             if (error instanceof Error) {
                 logger.error(`Login error details - Email: ${data.email}, Error: ${error.message}, Stack: ${error.stack}`);
+                logger.error(`Error name: ${error.name}`);
+                logger.error(`Error constructor: ${error.constructor.name}`);
+                
+                // Log additional context for debugging
+                logger.error(`Environment: ${process.env.NODE_ENV}`);
+                logger.error(`Database URL configured: ${!!process.env.DATABASE_URL}`);
+                logger.error(`Drizzle logger enabled: ${process.env.NODE_ENV === 'development'}`);
                 
                 // Check for specific database connection issues
                 if (error.message.includes('connection') || error.message.includes('timeout') || error.message.includes('ECONNREFUSED')) {
@@ -112,11 +210,23 @@ export default class AuthService {
                 }
                 
                 // Check for query execution issues
-                if (error.message.includes('query') || error.message.includes('syntax')) {
+                if (error.message.includes('query') || error.message.includes('syntax') || error.message.includes('Failed query')) {
                     logger.error(`Database query issue detected - Email: ${data.email}, Error: ${error.message}`);
+                    logger.error(`Query execution failed - This might be a prepared statement or connection pooling issue`);
                     return AuthErrorHandler.createServiceError(
                         AuthErrorType.INTERNAL_ERROR,
                         "Database query failed. Please try again later.",
+                        data.email
+                    );
+                }
+                
+                // Check for Drizzle ORM specific issues
+                if (error.message.includes('PostgresJsPreparedQuery') || error.message.includes('drizzle')) {
+                    logger.error(`Drizzle ORM issue detected - Email: ${data.email}, Error: ${error.message}`);
+                    logger.error(`This might be related to prepared statements or query caching`);
+                    return AuthErrorHandler.createServiceError(
+                        AuthErrorType.INTERNAL_ERROR,
+                        "Database ORM error. Please try again later.",
                         data.email
                     );
                 }
@@ -214,6 +324,79 @@ export default class AuthService {
                 logger.error(`Registration error details - Email: ${data.email}, Error: ${JSON.stringify(error)}`);
             }
             return AuthErrorHandler.handleDatabaseError(error, data.email, 'registration');
+        }
+    }
+
+    /**
+     * Diagnostic method to test database connectivity and query execution
+     */
+    static async diagnosticTest(): Promise<{ success: boolean; details: DiagnosticInfo }> {
+        const diagnosticInfo: DiagnosticInfo = {
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV,
+            databaseUrlConfigured: !!process.env.DATABASE_URL,
+            tests: []
+        };
+
+        try {
+            // Test 1: Simple connection test
+            logger.info('Diagnostic: Testing basic database connection');
+            await db.select({ version: sql`version()` });
+            diagnosticInfo.tests.push({
+                name: 'Basic Connection',
+                success: true,
+                result: 'Connection successful'
+            });
+
+            // Test 2: Simple query on users table
+            logger.info('Diagnostic: Testing simple users table query');
+            await db.select({ count: sql`count(*)` }).from(users);
+            diagnosticInfo.tests.push({
+                name: 'Users Count Query',
+                success: true,
+                result: 'Query executed successfully'
+            });
+
+            // Test 3: The exact query that's failing in login
+            logger.info('Diagnostic: Testing the exact login query');
+            const testEmail = 'admin@arunika.com';
+            const loginQuery = await db.select({
+                id: users.id,
+                password: users.password,
+                email: users.email,
+                role: users.role,
+                subscriptionId: users.subscriptionId,
+                isEmployee: users.isEmployee,
+                userDetails: {
+                    name: userDetails.name,
+                    imageProfile: userDetails.imageProfile,
+                    phoneNumber: userDetails.phoneNumber,
+                    address: userDetails.address
+                }
+            })
+                .from(users)
+                .leftJoin(userDetails, eq(users.id, userDetails.userId))
+                .where(eq(users.email, testEmail))
+                .limit(1);
+
+            diagnosticInfo.tests.push({
+                name: 'Login Query (admin@arunika.com)',
+                success: true,
+                result: `Found ${loginQuery.length} users`
+            });
+
+            return { success: true, details: diagnosticInfo };
+
+        } catch (error) {
+            logger.error(`Diagnostic test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            diagnosticInfo.tests.push({
+                name: 'Error Occurred',
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error',
+                stack: error instanceof Error ? error.stack : undefined
+            });
+            
+            return { success: false, details: diagnosticInfo };
         }
     }
 }

@@ -141,4 +141,38 @@ export default class AuthController {
         }
     }
 
+    /**
+     * Diagnostic endpoint to test database connectivity and query execution
+     * This endpoint should only be used for debugging purposes
+     */
+    static async diagnostic(req: Request, res: Response) {
+        try {
+            logger.info('Database diagnostic test initiated');
+            
+            const diagnosticResult = await AuthService.diagnosticTest();
+            
+            if (diagnosticResult.success) {
+                return response.success(
+                    res,
+                    diagnosticResult.details,
+                    'Database diagnostic completed successfully'
+                );
+            } else {
+                return response.internalServerError(
+                    res,
+                    'Database diagnostic failed',
+                    diagnosticResult.details
+                );
+            }
+            
+        } catch (error) {
+            logger.error(`Diagnostic endpoint error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            return response.internalServerError(
+                res,
+                'Diagnostic endpoint failed',
+                { error: error instanceof Error ? error.message : 'Unknown error' }
+            );
+        }
+    }
+
 }
