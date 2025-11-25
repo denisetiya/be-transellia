@@ -20,7 +20,8 @@ let env : {
   FIREBASE_CLIENT_EMAIL: string;
   FIREBASE_PRIVATE_KEY: string;
   MIDTRANS_SERVER_KEY : string;
-  MIDTRANS_CLIENT_KEY :  string
+  MIDTRANS_CLIENT_KEY :  string;
+  CORS_ORIGINS: string;
 };
 
 if (process.env.NODE_ENV === 'production') {
@@ -35,6 +36,7 @@ if (process.env.NODE_ENV === 'production') {
       FIREBASE_PRIVATE_KEY: validateEnvVar('FIREBASE_PRIVATE_KEY', process.env.FIREBASE_PRIVATE_KEY),
       MIDTRANS_SERVER_KEY : validateEnvVar('MIDTRANS_SERVER_KEY', process.env.MIDTRANS_SERVER_KEY),
       MIDTRANS_CLIENT_KEY :  validateEnvVar('MIDTRANS_CLIENT_KEY', process.env.MIDTRANS_CLIENT_KEY),
+      CORS_ORIGINS: process.env.CORS_ORIGINS || "http://localhost:5173,http://localhost:3000,https://admin-transellia.vercel.app",
     };
  } else {
     env = {
@@ -48,6 +50,7 @@ if (process.env.NODE_ENV === 'production') {
       FIREBASE_PRIVATE_KEY: validateEnvVar('FIREBASE_PRIVATE_KEY_DEV', process.env.FIREBASE_PRIVATE_KEY_DEV),
       MIDTRANS_SERVER_KEY : validateEnvVar('MIDTRANS_SERVER_KEY_DEV', process.env.MIDTRANS_SERVER_KEY_DEV),
       MIDTRANS_CLIENT_KEY :  validateEnvVar('MIDTRANS_CLIENT_KEY_DEV', process.env.MIDTRANS_CLIENT_KEY_DEV),
+      CORS_ORIGINS: process.env.CORS_ORIGINS || "http://localhost:5173,http://localhost:3000,https://admin-transellia.vercel.app",
     };
  }
 
