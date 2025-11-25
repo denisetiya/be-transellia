@@ -1,0 +1,247 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum Role {
+  user
+  admin
+}
+
+enum Status {
+  active
+  inactive
+  pending
+}
+
+enum DurationUnit {
+  days
+  weeks
+  months
+  years
+}
+
+enum PaymentMethod {
+  va
+  qr
+  wallet
+  credit_card
+}
+
+enum PaymentStatus {
+  pending
+  success
+  failed
+  expired
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+  sick
+}
+
+// Users table
+model User {
+  id              String          @id @default(cuid())
+  email           String          @unique
+  password        String
+  role            Role            @default(user)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @default(now()) @updatedAt @map("updated_at")
+  isEmployee      Boolean         @default(false) @map("is_employee")
+  subscriptionId  String?         @map("subscription_id")
+  
+  // Relations
+  userDetails     UserDetails?
+  subscription    SubscriptionList? @relation(fields: [subscriptionId], references: [id])
+  employee        Employee?
+  store           Store?
+  paymentHistories PaymentHistory[]
+  
+  @@map("users")
+  @@index([email], map: "email_idx")
+}
+
+// SubscriptionList table
+model SubscriptionList {
+  id                String       @id @default(cuid())
+  name              String
+  price             Decimal      @db.Decimal(10, 2)
+  currency          String       @default("USD")
+  description       String?
+  durationValue     Int          @default(1) @map("duration_value")
+  durationUnit      DurationUnit @default(months) @map("duration_unit")
+  features          String[]
+  status            Status       @default(active)
+  subscribersCount  Int          @default(0) @map("subscribers_count")
+  totalRevenue      Decimal      @default(0) @db.Decimal(10, 2) @map("total_revenue")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  users             User[]
+  paymentHistories  PaymentHistory[]
+  
+  @@map("subscription_lists")
+  @@index([name], map: "subscription_lists_name_idx")
+  @@index([status], map: "subscription_lists_status_idx")
+}
+
+// UserDetails table
+model UserDetails {
+  id           String   @id @default(cuid())
+  userId       String   @unique @map("user_id")
+  name         String?
+  imageProfile String?  @map("image_profile")
+  phoneNumber  String?  @map("phone_number")
+  address      String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  
+  @@map("user_details")
+  @@index([userId], map: "user_details_user_id_idx")
+}
+
+// Store table
+model Store {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  address   String?
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  user      User       @relation(fields: [userId], references: [id])
+  products  Product[]
+  employees Employee[]
+  
+  @@map("stores")
+  @@index([userId], map: "stores_user_id_idx")
+}
+
+// Employee table
+model Employee {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  storeId   String   @map("store_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  store       Store        @relation(fields: [storeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  attendances Attendance[]
+  historySales HistorySale[]
+  
+  @@map("employees")
+  @@index([userId], map: "employees_user_id_idx")
+  @@index([storeId], map: "employees_store_id_idx")
+}
+
+// Product table
+model Product {
+  id        String   @id @default(cuid())
+  name      String
+  description String?
+  price     Decimal  @db.Decimal(10, 2)
+  storeId   String   @map("store_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  historySales HistorySale[]
+  
+  @@map("products")
+  @@index([storeId], map: "products_store_id_idx")
+  @@index([name], map: "products_name_idx")
+}
+
+// HistorySale table
+model HistorySale {
+  id            String   @id @default(cuid())
+  productId     String   @map("product_id")
+  employeeId    String   @map("employee_id")
+  totalProduct  Decimal  @db.Decimal(10, 2) @map("total_product")
+  paymentMethod PaymentMethod? @map("payment_method")
+  totalPrice    Decimal  @db.Decimal(10, 2) @map("total_price")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  
+  @@map("history_sales")
+  @@index([productId], map: "history_sales_product_id_idx")
+  @@index([employeeId], map: "history_sales_employee_id_idx")
+  @@index([createdAt], map: "history_sales_created_at_idx")
+}
+
+// Attendance table
+model Attendance {
+  id        String          @id @default(cuid())
+  employeeId String         @map("employee_id")
+  date      DateTime
+  status    AttendanceStatus
+  image     String?
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  
+  @@map("attendances")
+  @@index([employeeId], map: "attendances_employee_id_idx")
+  @@index([date], map: "attendances_date_idx")
+  @@index([employeeId, date], map: "attendances_employee_date_idx")
+}
+
+// PaymentHistory table
+model PaymentHistory {
+  id             String        @id @default(cuid())
+  userId         String        @map("user_id")
+  subscriptionId String        @map("subscription_id")
+  orderId        String        @unique @map("order_id")
+  paymentId      String?       @map("payment_id")
+  amount         Decimal       @db.Decimal(10, 2)
+  currency       String
+  paymentMethod  PaymentMethod @map("payment_method")
+  status         PaymentStatus
+  transactionTime DateTime?    @map("transaction_time")
+  expiryTime     DateTime?     @map("expiry_time")
+  vaNumber       String?       @map("va_number")
+  bank           String?
+  qrCode         String?       @map("qr_code")
+  redirectUrl    String?       @map("redirect_url")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  subscription  SubscriptionList  @relation(fields: [subscriptionId], references: [id])
+  
+  @@map("payment_histories")
+  @@index([userId], map: "payment_histories_user_id_idx")
+  @@index([subscriptionId], map: "payment_histories_subscription_id_idx")
+  @@index([orderId], map: "payment_histories_order_id_idx")
+  @@unique([orderId], map: "payment_histories_order_id_unique")
+}

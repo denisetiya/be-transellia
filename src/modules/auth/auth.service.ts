@@ -18,26 +18,6 @@ interface UserWithDetails {
     } | null;
 }
 
-interface SimpleUser {
-    id: string;
-    password: string;
-    email: string;
-    role: string | null;
-    subscriptionId: string | null;
-    isEmployee: boolean | null;
-}
-
-interface UserDetails {
-    id: string;
-    userId: string;
-    name: string | null;
-    imageProfile: string | null;
-    phoneNumber: string | null;
-    address: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-}
-
 interface DiagnosticTest {
     name: string;
     success: boolean;
@@ -58,9 +38,7 @@ import env from "../../config/env.config";
 import logger from "../../lib/lib.logger";
 import AuthErrorHandler from "./auth.error";
 import type { AuthLoginResult, AuthRegisterResult } from "./auth.type";
-import { db } from "../../config/drizzle.config";
-import { eq, sql } from "drizzle-orm";
-import { users, userDetails } from "../../db/schema";
+import prisma from "../../config/prisma.config";
 import { generateId } from "../../lib/lib.id.generator";
 
 export default class AuthService {
@@ -96,165 +74,128 @@ export default class AuthService {
                 logger.info(`Vercel environment: ${process.env.VERCEL ? 'Yes' : 'No'}`);
                 logger.info(`Vercel region: ${process.env.VERCEL_REGION || 'Unknown'}`);
 
-                let user: UserWithDetails[];
+                let user: UserWithDetails | null;
             
-                // SERVERLESS-OPTIMIZED APPROACH: Skip complex JOIN entirely for serverless environments
+                // PRIMA-OPTIMIZED APPROACH: Use Prisma's optimized queries for serverless environments
                 if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-                    logger.info(`Using serverless-optimized query approach - Email: ${data.email}`);
+                    logger.info(`Using Prisma-optimized query approach - Email: ${data.email}`);
                     
                     try {
-                        // Step 1: Simple user query without JOIN (most reliable for serverless)
-                        logger.info(`Step 1: Executing simple user query - Email: ${data.email}`);
-                        const simpleUser = await db.select({
-                            id: users.id,
-                            password: users.password,
-                            email: users.email,
-                            role: users.role,
-                            subscriptionId: users.subscriptionId,
-                            isEmployee: users.isEmployee
-                        })
-                            .from(users)
-                            .where(eq(users.email, data.email))
-                            .limit(1) as SimpleUser[];
-                        
-                        logger.info(`Step 1 completed - Found ${simpleUser.length} users`);
-                        
-                        if (simpleUser.length > 0 && simpleUser[0]) {
-                            // Step 2: Separate user details query
-                            logger.info(`Step 2: Executing user details query - UserID: ${simpleUser[0].id}`);
-                            
-                            try {
-                                const userDetailsResult = await db.select()
-                                    .from(userDetails)
-                                    .where(eq(userDetails.userId, simpleUser[0].id))
-                                    .limit(1) as UserDetails[];
-                                
-                                logger.info(`Step 2 completed - Found ${userDetailsResult.length} user details`);
-                                
-                                user = [{
-                                    ...simpleUser[0],
-                                    userDetails: userDetailsResult[0] || null
-                                }];
-                                
-                                logger.info(`Serverless query strategy completed successfully - Final results count: ${user.length}`);
-                            } catch (detailsError) {
-                                logger.warn(`User details query failed, proceeding with user data only - Error: ${detailsError instanceof Error ? detailsError.message : 'Unknown'}`);
-                                
-                                user = [{
-                                    ...simpleUser[0],
-                                    userDetails: null
-                                }];
+                        // Step 1: Find user with Prisma
+                        logger.info(`Step 1: Executing user query - Email: ${data.email}`);
+                        const foundUser = await prisma.user.findUnique({
+                            where: {
+                                email: data.email
+                            },
+                            include: {
+                                userDetails: true
                             }
+                        });
+                        
+                        logger.info(`Step 1 completed - User found: ${!!foundUser}`);
+                        
+                        if (foundUser) {
+                            user = {
+                                id: foundUser.id,
+                                password: foundUser.password,
+                                email: foundUser.email,
+                                role: foundUser.role,
+                                subscriptionId: foundUser.subscriptionId,
+                                isEmployee: foundUser.isEmployee,
+                                userDetails: foundUser.userDetails ? {
+                                    name: foundUser.userDetails.name,
+                                    imageProfile: foundUser.userDetails.imageProfile,
+                                    phoneNumber: foundUser.userDetails.phoneNumber,
+                                    address: foundUser.userDetails.address
+                                } : null
+                            };
+                            
+                            logger.info(`Prisma query strategy completed successfully`);
                         } else {
-                            user = [];
+                            user = null;
                             logger.info(`No user found with email: ${data.email}`);
                         }
                     } catch (queryError) {
-                        logger.error(`Serverless query approach failed - Email: ${data.email}`);
+                        logger.error(`Prisma query approach failed - Email: ${data.email}`);
                         logger.error(`Error type: ${queryError instanceof Error ? queryError.constructor.name : 'Unknown'}`);
                         logger.error(`Error message: ${queryError instanceof Error ? queryError.message : 'Unknown'}`);
                         throw queryError;
                     }
                 } else {
-                    // DEVELOPMENT APPROACH: Try complex JOIN first, fallback to simple queries
+                    // DEVELOPMENT APPROACH: Use Prisma with detailed logging
                     logger.info(`Using development query approach - Email: ${data.email}`);
                     
                     try {
-                        logger.info(`Attempting complex JOIN query - Email: ${data.email}`);
+                        logger.info(`Attempting Prisma query - Email: ${data.email}`);
                         logger.info(`Query timestamp: ${new Date().toISOString()}`);
                         
-                        user = await db.select({
-                            id: users.id,
-                            password: users.password,
-                            email: users.email,
-                            role: users.role,
-                            subscriptionId: users.subscriptionId,
-                            isEmployee: users.isEmployee,
-                            userDetails: {
-                                name: userDetails.name,
-                                imageProfile: userDetails.imageProfile,
-                                phoneNumber: userDetails.phoneNumber,
-                                address: userDetails.address
+                        const foundUser = await prisma.user.findUnique({
+                            where: {
+                                email: data.email
+                            },
+                            include: {
+                                userDetails: true
                             }
-                        })
-                            .from(users)
-                            .leftJoin(userDetails, eq(users.id, userDetails.userId))
-                            .where(eq(users.email, data.email))
-                            .limit(1);
-                            
-                        logger.info(`Complex JOIN query completed successfully - Results count: ${user.length}`);
-                    } catch (queryError) {
-                        logger.error(`Complex JOIN query failed, falling back to simple queries - Email: ${data.email}`);
-                        logger.error(`Error type: ${queryError instanceof Error ? queryError.constructor.name : 'Unknown'}`);
-                        logger.error(`Error message: ${queryError instanceof Error ? queryError.message : 'Unknown'}`);
+                        });
                         
-                        // Fallback to simple queries
-                        const simpleUser = await db.select({
-                            id: users.id,
-                            password: users.password,
-                            email: users.email,
-                            role: users.role,
-                            subscriptionId: users.subscriptionId,
-                            isEmployee: users.isEmployee
-                        })
-                            .from(users)
-                            .where(eq(users.email, data.email))
-                            .limit(1) as SimpleUser[];
-                        
-                        if (simpleUser.length > 0 && simpleUser[0]) {
-                            const userDetailsResult = await db.select()
-                                .from(userDetails)
-                                .where(eq(userDetails.userId, simpleUser[0].id))
-                                .limit(1) as UserDetails[];
-                            
-                            user = [{
-                                ...simpleUser[0],
-                                userDetails: userDetailsResult[0] || null
-                            }];
+                        if (foundUser) {
+                            user = {
+                                id: foundUser.id,
+                                password: foundUser.password,
+                                email: foundUser.email,
+                                role: foundUser.role,
+                                subscriptionId: foundUser.subscriptionId,
+                                isEmployee: foundUser.isEmployee,
+                                userDetails: foundUser.userDetails ? {
+                                    name: foundUser.userDetails.name,
+                                    imageProfile: foundUser.userDetails.imageProfile,
+                                    phoneNumber: foundUser.userDetails.phoneNumber,
+                                    address: foundUser.userDetails.address
+                                } : null
+                            };
                         } else {
-                            user = [];
+                            user = null;
                         }
                         
-                        logger.info(`Fallback query strategy completed - Final results count: ${user.length}`);
+                        logger.info(`Prisma query completed successfully - User found: ${!!user}`);
+                    } catch (queryError) {
+                        logger.error(`Prisma query failed - Email: ${data.email}`);
+                        logger.error(`Error type: ${queryError instanceof Error ? queryError.constructor.name : 'Unknown'}`);
+                        logger.error(`Error message: ${queryError instanceof Error ? queryError.message : 'Unknown'}`);
+                        throw queryError;
                     }
                 }
 
-                if (!user.length) {
+                if (!user) {
                     logger.warn(`User not found - Email: ${data.email}`);
                     return AuthErrorHandler.errors.invalidCredentials(data.email);
                 }
 
-                const userData = user[0];
-                if (!userData) {
-                    logger.error(`Unexpected error: User data is null after successful query - Email: ${data.email}`);
-                    return AuthErrorHandler.handleDatabaseError(new Error("User data is null"), data.email, 'login');
-                }
-
                 // Verify password using the same deterministic salt
                 const salt = this.generateSaltFromEmail(data.email);
-                logger.info(`Stored password: ${userData.password}`);
+                logger.info(`Stored password: ${user.password}`);
                 logger.info(`Generated salt: ${salt}`);
-                const isPasswordValid = Hash.verifyPassword(data.password, userData.password, salt);
+                const isPasswordValid = Hash.verifyPassword(data.password, user.password, salt);
                 
                 if (!isPasswordValid) {
-                    logger.warn(`Invalid password attempt - Email: ${data.email}, UserID: ${userData.id}`);
+                    logger.warn(`Invalid password attempt - Email: ${data.email}, UserID: ${user.id}`);
                     return AuthErrorHandler.errors.invalidCredentials(data.email);
                 }
 
                 // Generate token
-                const token = this.generateToken(userData);
+                const token = this.generateToken(user);
                 
-                logger.info(`User login successful - UserID: ${userData.id}, Email: ${userData.email}`);
+                logger.info(`User login successful - UserID: ${user.id}, Email: ${user.email}`);
 
                 return {
                     data: {
-                        id: userData.id,
-                        email: userData.email,
-                        password: userData.password,
-                        role: userData.role,
-                        subscriptionId: userData.subscriptionId,
-                        UserDetails: userData.userDetails,
-                        isEmployee: userData.isEmployee
+                        id: user.id,
+                        email: user.email,
+                        password: user.password,
+                        role: user.role,
+                        subscriptionId: user.subscriptionId,
+                        UserDetails: user.userDetails,
+                        isEmployee: user.isEmployee
                     },
                     message: "Login berhasil",
                     token: token ? token : null,
@@ -278,7 +219,7 @@ export default class AuthService {
                         // Log additional context for debugging
                         logger.error(`Environment: ${process.env.NODE_ENV}`);
                         logger.error(`Database URL configured: ${!!process.env.DATABASE_URL}`);
-                        logger.error(`Drizzle logger enabled: ${process.env.NODE_ENV === 'development'}`);
+                        logger.error(`Prisma logger enabled: ${process.env.NODE_ENV === 'development'}`);
                         
                         // Check for specific database connection issues
                         if (error.message.includes('connection') || error.message.includes('timeout') || error.message.includes('ECONNREFUSED')) {
@@ -293,7 +234,7 @@ export default class AuthService {
                         // Check for query execution issues
                         if (error.message.includes('query') || error.message.includes('syntax') || error.message.includes('Failed query')) {
                             logger.error(`Database query issue detected - Email: ${data.email}, Error: ${error.message}`);
-                            logger.error(`Query execution failed - This might be a prepared statement or connection pooling issue`);
+                            logger.error(`Query execution failed - This might be a Prisma query or connection issue`);
                             return AuthErrorHandler.createServiceError(
                                 AuthErrorType.INTERNAL_ERROR,
                                 "Database query failed. Please try again later.",
@@ -301,10 +242,10 @@ export default class AuthService {
                             );
                         }
                         
-                        // Check for Drizzle ORM specific issues
-                        if (error.message.includes('PostgresJsPreparedQuery') || error.message.includes('drizzle')) {
-                            logger.error(`Drizzle ORM issue detected - Email: ${data.email}, Error: ${error.message}`);
-                            logger.error(`This might be related to prepared statements or query caching`);
+                        // Check for Prisma specific issues
+                        if (error.message.includes('Prisma') || error.message.includes('prisma')) {
+                            logger.error(`Prisma ORM issue detected - Email: ${data.email}, Error: ${error.message}`);
+                            logger.error(`This might be related to Prisma client or query execution`);
                             return AuthErrorHandler.createServiceError(
                                 AuthErrorType.INTERNAL_ERROR,
                                 "Database ORM error. Please try again later.",
@@ -322,7 +263,7 @@ export default class AuthService {
                 if (error instanceof Error && (
                     error.message.includes('connection') ||
                     error.message.includes('timeout') ||
-                    error.message.includes('PostgresJsPreparedQuery')
+                    error.message.includes('Prisma')
                 )) {
                     const delay = Math.min(1000 * Math.pow(2, attempt - 1), 3000);
                     logger.info(`Connection error detected, waiting ${delay}ms before retry...`);
@@ -344,11 +285,13 @@ export default class AuthService {
             logger.info(`Attempting user registration - Email: ${data.email}`);
 
             // Check if user already exists
-            const existingUser = await db.select().from(users)
-                .where(eq(users.email, data.email))
-                .limit(1);
+            const existingUser = await prisma.user.findUnique({
+                where: {
+                    email: data.email
+                }
+            });
 
-            if (existingUser.length) {
+            if (existingUser) {
                 logger.warn(`Registration attempted with existing email - Email: ${data.email}`);
                 return AuthErrorHandler.errors.emailAlreadyExists(data.email);
             }
@@ -361,25 +304,29 @@ export default class AuthService {
             const userDetailsId = generateId();
 
             // Create user with transaction for data consistency
-            const newUser = await db.transaction(async (tx) => {
+            const newUser = await prisma.$transaction(async (tx) => {
                 // Create user first to satisfy foreign key constraint
-                const user = await tx.insert(users).values({
-                    id: userId,
-                    email: data.email,
-                    password: hashedPassword,
-                    role: 'user', // Use lowercase to match schema enum
-                    isEmployee: false,
-                    subscriptionId: 'cmesn7has0000d5etmb7jw21s' // Default subscription
-                }).returning();
-
-                // Then create user details with valid user reference
-                await tx.insert(userDetails).values({
-                    id: userDetailsId,
-                    userId: userId,
-                    name: data.name
+                const user = await tx.user.create({
+                    data: {
+                        id: userId,
+                        email: data.email,
+                        password: hashedPassword,
+                        role: 'user', // Use lowercase to match schema enum
+                        isEmployee: false,
+                        subscriptionId: 'cmesn7has0000d5etmb7jw21s' // Default subscription
+                    }
                 });
 
-                return user[0];
+                // Then create user details with valid user reference
+                await tx.userDetails.create({
+                    data: {
+                        id: userDetailsId,
+                        userId: userId,
+                        name: data.name
+                    }
+                });
+
+                return user;
             });
 
             if (!newUser) {
@@ -398,9 +345,11 @@ export default class AuthService {
             }
 
             // Get user details for response
-            const userDetailsResult = await db.select().from(userDetails)
-                .where(eq(userDetails.userId, newUser.id))
-                .limit(1);
+            const userDetailsResult = await prisma.userDetails.findUnique({
+                where: {
+                    userId: newUser.id
+                }
+            });
 
             return {
                 data: {
@@ -409,7 +358,7 @@ export default class AuthService {
                     password: newUser.password,
                     role: newUser.role,
                     subscriptionId: newUser.subscriptionId || null,
-                    UserDetails: userDetailsResult[0] || null,
+                    UserDetails: userDetailsResult || null,
                     isEmployee: newUser.isEmployee
                 },
                 message: token ? "Registrasi berhasil" : "Registrasi berhasil, namun gagal membuat token. Silakan login kembali.",
@@ -452,7 +401,7 @@ export default class AuthService {
             // Test 1: Basic connection test with timing
             logger.info('Diagnostic: Testing basic database connection');
             const startTime1 = Date.now();
-            await db.select({ version: sql`version()` });
+            await prisma.$queryRaw`SELECT version()`;
             const endTime1 = Date.now();
             diagnosticInfo.tests.push({
                 name: 'Basic Connection',
@@ -464,61 +413,53 @@ export default class AuthService {
             // Test 2: Simple query on users table with timing
             logger.info('Diagnostic: Testing simple users table query');
             const startTime2 = Date.now();
-            const userCount = await db.select({ count: sql`count(*)` }).from(users);
+            const userCount = await prisma.user.count();
             const endTime2 = Date.now();
             diagnosticInfo.tests.push({
                 name: 'Users Count Query',
                 success: true,
-                result: `Query executed successfully in ${endTime2 - startTime2}ms, found ${userCount[0]?.count || 0} users`
+                result: `Query executed successfully in ${endTime2 - startTime2}ms, found ${userCount} users`
             });
             logger.info(`Users count query passed in ${endTime2 - startTime2}ms`);
 
-            // Test 3: Simple user query without JOIN (testing prepared statement issues)
-            logger.info('Diagnostic: Testing simple user query without JOIN');
+            // Test 3: Simple user query without relations (testing basic Prisma queries)
+            logger.info('Diagnostic: Testing simple user query without relations');
             const startTime3 = Date.now();
-            const simpleUserQuery = await db.select({
-                id: users.id,
-                email: users.email,
-                role: users.role
-            })
-                .from(users)
-                .where(eq(users.email, 'admin@transellia.com'))
-                .limit(1);
+            const simpleUserQuery = await prisma.user.findUnique({
+                where: {
+                    email: 'admin@transellia.com'
+                },
+                select: {
+                    id: true,
+                    email: true,
+                    role: true
+                }
+            });
             const endTime3 = Date.now();
             diagnosticInfo.tests.push({
-                name: 'Simple User Query (no JOIN)',
+                name: 'Simple User Query (no relations)',
                 success: true,
-                result: `Simple query successful in ${endTime3 - startTime3}ms, found ${simpleUserQuery.length} users`
+                result: `Simple query successful in ${endTime3 - startTime3}ms, found ${simpleUserQuery ? 1 : 0} users`
             });
             logger.info(`Simple user query passed in ${endTime3 - startTime3}ms`);
 
-            // Test 4: The exact complex query that's failing in login
-            logger.info('Diagnostic: Testing the exact complex login query with JOIN');
+            // Test 4: The exact complex query that's used in login
+            logger.info('Diagnostic: Testing the exact complex login query with relations');
             const startTime4 = Date.now();
             const testEmail = 'admin@transellia.com';
-            const loginQuery = await db.select({
-                id: users.id,
-                password: users.password,
-                email: users.email,
-                role: users.role,
-                subscriptionId: users.subscriptionId,
-                isEmployee: users.isEmployee,
-                userDetails: {
-                    name: userDetails.name,
-                    imageProfile: userDetails.imageProfile,
-                    phoneNumber: userDetails.phoneNumber,
-                    address: userDetails.address
+            const loginQuery = await prisma.user.findUnique({
+                where: {
+                    email: testEmail
+                },
+                include: {
+                    userDetails: true
                 }
-            })
-                .from(users)
-                .leftJoin(userDetails, eq(users.id, userDetails.userId))
-                .where(eq(users.email, testEmail))
-                .limit(1);
+            });
             const endTime4 = Date.now();
             diagnosticInfo.tests.push({
-                name: 'Complex Login Query (with JOIN)',
+                name: 'Complex Login Query (with relations)',
                 success: true,
-                result: `Complex query successful in ${endTime4 - startTime4}ms, found ${loginQuery.length} users`
+                result: `Complex query successful in ${endTime4 - startTime4}ms, found ${loginQuery ? 1 : 0} users`
             });
             logger.info(`Complex login query passed in ${endTime4 - startTime4}ms`);
 
@@ -527,7 +468,7 @@ export default class AuthService {
             const startTime5 = Date.now();
             const promises = [];
             for (let i = 0; i < 3; i++) {
-                promises.push(db.select({ count: sql`count(*)` }).from(users));
+                promises.push(prisma.user.count());
             }
             await Promise.all(promises);
             const endTime5 = Date.now();
@@ -556,8 +497,8 @@ export default class AuthService {
             
             // Analyze error patterns
             if (error instanceof Error) {
-                if (error.message.includes('PostgresJsPreparedQuery')) {
-                    logger.error(`DIAGNOSIS: This is a prepared statement issue - likely serverless compatibility problem`);
+                if (error.message.includes('Prisma')) {
+                    logger.error(`DIAGNOSIS: This is a Prisma ORM issue - likely query or connection problem`);
                 }
                 if (error.message.includes('connection') || error.message.includes('timeout')) {
                     logger.error(`DIAGNOSIS: This is a connection pooling issue - likely configuration problem`);
