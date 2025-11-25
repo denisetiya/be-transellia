@@ -1,6 +1,4 @@
-import { db } from '../../config/drizzle.config';
-import { eq, desc, count } from 'drizzle-orm';
-import { paymentHistories, users, subscriptionLists } from '../../db/schema';
+import prisma from '../../config/prisma.config';
 import logger from "../../lib/lib.logger";
 import PaymentHistoryErrorHandler from "./payment-history.error";
 import { PaymentHistoriesResult, PaymentHistoryResult, iPaymentHistory } from "./payment-history.type";
@@ -14,46 +12,33 @@ export default class PaymentHistoryService {
     try {
       logger.info(`Attempting to fetch payment histories from database - Page: ${page}, Limit: ${limit}`);
       
-      // Calculate offset value for pagination
-      const offset = (page - 1) * limit;
+      // Calculate skip value for pagination
+      const skip = (page - 1) * limit;
       
-      // Fetch payment histories with pagination
+      // Fetch payment histories with pagination using Prisma
       const [paymentHistoriesData, total] = await Promise.all([
-        db.select({
-          id: paymentHistories.id,
-          userId: paymentHistories.userId,
-          subscriptionId: paymentHistories.subscriptionId,
-          orderId: paymentHistories.orderId,
-          paymentId: paymentHistories.paymentId,
-          amount: paymentHistories.amount,
-          currency: paymentHistories.currency,
-          paymentMethod: paymentHistories.paymentMethod,
-          status: paymentHistories.status,
-          transactionTime: paymentHistories.transactionTime,
-          expiryTime: paymentHistories.expiryTime,
-          vaNumber: paymentHistories.vaNumber,
-          bank: paymentHistories.bank,
-          qrCode: paymentHistories.qrCode,
-          redirectUrl: paymentHistories.redirectUrl,
-          createdAt: paymentHistories.createdAt,
-          updatedAt: paymentHistories.updatedAt,
-          user: {
-            email: users.email,
-            name: users.id // We'll need to join with userDetails for name
+        prisma.paymentHistory.findMany({
+          include: {
+            user: {
+              select: {
+                email: true
+              }
+            },
+            subscription: {
+              select: {
+                name: true,
+                price: true
+              }
+            }
           },
-          subscription: {
-            name: subscriptionLists.name,
-            price: subscriptionLists.price
-          }
-        })
-        .from(paymentHistories)
-        .leftJoin(users, eq(paymentHistories.userId, users.id))
-        .leftJoin(subscriptionLists, eq(paymentHistories.subscriptionId, subscriptionLists.id))
-        .orderBy(desc(paymentHistories.createdAt))
-        .limit(limit)
-        .offset(offset),
+          orderBy: {
+            createdAt: 'desc'
+          },
+          skip,
+          take: limit
+        }),
         
-        db.select({ count: count() }).from(paymentHistories).then(result => result[0]?.count || 0)
+        prisma.paymentHistory.count()
       ]);
       
       // Calculate total pages
@@ -103,44 +88,31 @@ export default class PaymentHistoryService {
     try {
       logger.info(`Attempting to fetch payment history from database - ID: ${id}`);
       
-      const paymentHistoryData = await db.select({
-        id: paymentHistories.id,
-        userId: paymentHistories.userId,
-        subscriptionId: paymentHistories.subscriptionId,
-        orderId: paymentHistories.orderId,
-        paymentId: paymentHistories.paymentId,
-        amount: paymentHistories.amount,
-        currency: paymentHistories.currency,
-        paymentMethod: paymentHistories.paymentMethod,
-        status: paymentHistories.status,
-        transactionTime: paymentHistories.transactionTime,
-        expiryTime: paymentHistories.expiryTime,
-        vaNumber: paymentHistories.vaNumber,
-        bank: paymentHistories.bank,
-        qrCode: paymentHistories.qrCode,
-        redirectUrl: paymentHistories.redirectUrl,
-        createdAt: paymentHistories.createdAt,
-        updatedAt: paymentHistories.updatedAt,
-        user: {
-          email: users.email,
+      const paymentHistoryData = await prisma.paymentHistory.findUnique({
+        where: {
+          id: id
         },
-        subscription: {
-          name: subscriptionLists.name,
-          price: subscriptionLists.price
+        include: {
+          user: {
+            select: {
+              email: true
+            }
+          },
+          subscription: {
+            select: {
+              name: true,
+              price: true
+            }
+          }
         }
-      })
-      .from(paymentHistories)
-      .leftJoin(users, eq(paymentHistories.userId, users.id))
-      .leftJoin(subscriptionLists, eq(paymentHistories.subscriptionId, subscriptionLists.id))
-      .where(eq(paymentHistories.id, id))
-      .limit(1);
+      });
       
-      if (!paymentHistoryData.length) {
+      if (!paymentHistoryData) {
         logger.warn(`Payment history not found - ID: ${id}`);
         return PaymentHistoryErrorHandler.errors.notFound(id);
       }
       
-      const paymentHistory = paymentHistoryData[0];
+      const paymentHistory = paymentHistoryData;
       if (!paymentHistory) {
         logger.warn(`Payment history not found - ID: ${id}`);
         return PaymentHistoryErrorHandler.errors.notFound(id);
@@ -184,42 +156,35 @@ export default class PaymentHistoryService {
     try {
       logger.info(`Attempting to fetch payment histories for user from database - User ID: ${userId}, Page: ${page}, Limit: ${limit}`);
       
-      // Calculate offset value for pagination
-      const offset = (page - 1) * limit;
+      // Calculate skip value for pagination
+      const skip = (page - 1) * limit;
       
-      // Fetch payment histories with pagination
+      // Fetch payment histories with pagination using Prisma
       const [paymentHistoriesData, total] = await Promise.all([
-        db.select({
-          id: paymentHistories.id,
-          userId: paymentHistories.userId,
-          subscriptionId: paymentHistories.subscriptionId,
-          orderId: paymentHistories.orderId,
-          paymentId: paymentHistories.paymentId,
-          amount: paymentHistories.amount,
-          currency: paymentHistories.currency,
-          paymentMethod: paymentHistories.paymentMethod,
-          status: paymentHistories.status,
-          transactionTime: paymentHistories.transactionTime,
-          expiryTime: paymentHistories.expiryTime,
-          vaNumber: paymentHistories.vaNumber,
-          bank: paymentHistories.bank,
-          qrCode: paymentHistories.qrCode,
-          redirectUrl: paymentHistories.redirectUrl,
-          createdAt: paymentHistories.createdAt,
-          updatedAt: paymentHistories.updatedAt,
-          subscription: {
-            name: subscriptionLists.name,
-            price: subscriptionLists.price
+        prisma.paymentHistory.findMany({
+          where: {
+            userId: userId
+          },
+          include: {
+            subscription: {
+              select: {
+                name: true,
+                price: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          },
+          skip,
+          take: limit
+        }),
+        
+        prisma.paymentHistory.count({
+          where: {
+            userId: userId
           }
         })
-        .from(paymentHistories)
-        .leftJoin(subscriptionLists, eq(paymentHistories.subscriptionId, subscriptionLists.id))
-        .where(eq(paymentHistories.userId, userId))
-        .orderBy(desc(paymentHistories.createdAt))
-        .limit(limit)
-        .offset(offset),
-        
-        db.select({ count: count() }).from(paymentHistories).where(eq(paymentHistories.userId, userId)).then(result => result[0]?.count || 0)
       ]);
       
       // Calculate total pages
@@ -269,23 +234,25 @@ export default class PaymentHistoryService {
     try {
       logger.info("Attempting to create payment history in database");
       
-      const [paymentHistory] = await db.insert(paymentHistories).values({
-        id: generateId(),
-        userId: paymentData.userId,
-        subscriptionId: paymentData.subscriptionId,
-        orderId: paymentData.orderId,
-        paymentId: paymentData.paymentId,
-        amount: paymentData.amount.toString(),
-        currency: paymentData.currency,
-        paymentMethod: paymentData.paymentMethod as "va" | "qr" | "wallet" | "credit_card",
-        status: paymentData.status as "pending" | "success" | "failed" | "expired",
-        transactionTime: paymentData.transactionTime,
-        expiryTime: paymentData.expiryTime,
-        vaNumber: paymentData.vaNumber,
-        bank: paymentData.bank,
-        qrCode: paymentData.qrCode,
-        redirectUrl: paymentData.redirectUrl
-      }).returning();
+      const paymentHistory = await prisma.paymentHistory.create({
+        data: {
+          id: generateId(),
+          userId: paymentData.userId,
+          subscriptionId: paymentData.subscriptionId,
+          orderId: paymentData.orderId,
+          paymentId: paymentData.paymentId,
+          amount: paymentData.amount.toString(),
+          currency: paymentData.currency,
+          paymentMethod: paymentData.paymentMethod as "va" | "qr" | "wallet" | "credit_card",
+          status: paymentData.status as "pending" | "success" | "failed" | "expired",
+          transactionTime: paymentData.transactionTime,
+          expiryTime: paymentData.expiryTime,
+          vaNumber: paymentData.vaNumber,
+          bank: paymentData.bank,
+          qrCode: paymentData.qrCode,
+          redirectUrl: paymentData.redirectUrl
+        }
+      });
       
       if (!paymentHistory) {
         logger.error("Failed to create payment history");
@@ -331,20 +298,26 @@ export default class PaymentHistoryService {
       logger.info(`Attempting to update payment history status in database - Order ID: ${orderId}, Status: ${status}`);
       
       // Check if payment history exists
-      const existingPaymentHistory = await db.select().from(paymentHistories).where(eq(paymentHistories.orderId, orderId)).limit(1);
+      const existingPaymentHistory = await prisma.paymentHistory.findUnique({
+        where: {
+          orderId: orderId
+        }
+      });
       
-      if (!existingPaymentHistory.length) {
+      if (!existingPaymentHistory) {
         logger.warn(`Payment history not found for update - Order ID: ${orderId}`);
         return PaymentHistoryErrorHandler.errors.notFound(orderId);
       }
       
-      const [paymentHistory] = await db.update(paymentHistories)
-        .set({
+      const paymentHistory = await prisma.paymentHistory.update({
+        where: {
+          orderId: orderId
+        },
+        data: {
           status: status as "pending" | "success" | "failed" | "expired",
           paymentId: paymentId
-        })
-        .where(eq(paymentHistories.orderId, orderId))
-        .returning();
+        }
+      });
       
       if (!paymentHistory) {
         logger.error(`Failed to update payment history status - Order ID: ${orderId}`);

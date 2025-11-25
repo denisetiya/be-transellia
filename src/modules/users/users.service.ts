@@ -1,6 +1,4 @@
-import { db } from '../../config/drizzle.config';
-import { eq, count, sql } from 'drizzle-orm';
-import { users, userDetails, subscriptionLists } from '../../db/schema';
+import prisma from '../../config/prisma.config';
 import logger from "../../lib/lib.logger";
 import Hash from "../../lib/lib.hash";
 import env from "../../config/env.config";
@@ -25,54 +23,35 @@ export default class UsersService {
         try {
             logger.info(`Attempting to fetch users from database - Page: ${page}, Limit: ${limit}`);
             
-            // Calculate offset value for pagination
-            const offset = (page - 1) * limit;
+            // Calculate skip value for pagination
+            const skip = (page - 1) * limit;
             
-            // Fetch users with pagination
+            // Fetch users with pagination using Prisma
             const [usersData, total] = await Promise.all([
-                db.select({
-                    id: users.id,
-                    email: users.email,
-                    role: users.role,
-                    subscriptionId: users.subscriptionId,
-                    isEmployee: users.isEmployee,
-                    createdAt: users.createdAt,
-                    updatedAt: users.updatedAt,
-                    UserDetails: {
-                        id: userDetails.id,
-                        userId: userDetails.userId,
-                        name: userDetails.name,
-                        imageProfile: userDetails.imageProfile,
-                        phoneNumber: userDetails.phoneNumber,
-                        address: userDetails.address,
-                        createdAt: userDetails.createdAt,
-                        updatedAt: userDetails.updatedAt
+                prisma.user.findMany({
+                    where: {
+                        role: {
+                            not: 'admin'
+                        }
                     },
-                    subscription: {
-                        id: subscriptionLists.id,
-                        name: subscriptionLists.name,
-                        price: subscriptionLists.price,
-                        currency: subscriptionLists.currency,
-                        description: subscriptionLists.description,
-                        durationValue: subscriptionLists.durationValue,
-                        durationUnit: subscriptionLists.durationUnit,
-                        features: subscriptionLists.features,
-                        status: subscriptionLists.status,
-                        subscribersCount: subscriptionLists.subscribersCount,
-                        totalRevenue: subscriptionLists.totalRevenue,
-                        createdAt: subscriptionLists.createdAt,
-                        updatedAt: subscriptionLists.updatedAt
+                    include: {
+                        userDetails: true,
+                        subscription: true
+                    },
+                    orderBy: {
+                        createdAt: 'asc'
+                    },
+                    skip,
+                    take: limit
+                }),
+                
+                prisma.user.count({
+                    where: {
+                        role: {
+                            not: 'admin'
+                        }
                     }
                 })
-                .from(users)
-                .leftJoin(userDetails, eq(users.id, userDetails.userId))
-                .leftJoin(subscriptionLists, eq(users.subscriptionId, subscriptionLists.id))
-                .where(sql`${users.role} != 'ADMIN'`)
-                .orderBy(users.createdAt)
-                .limit(limit)
-                .offset(offset),
-                
-                db.select({ count: count() }).from(users).where(sql`${users.role} != 'ADMIN'`).then(result => result[0]?.count || 0)
             ]);
             
             // Calculate total pages
@@ -86,7 +65,12 @@ export default class UsersService {
                     email: user.email,
                     role: user.role,
                     subscriptionId: user.subscriptionId,
-                    UserDetails: user.UserDetails,
+                    UserDetails: user.userDetails ? {
+                        name: user.userDetails.name,
+                        imageProfile: user.userDetails.imageProfile,
+                        phoneNumber: user.userDetails.phoneNumber,
+                        address: user.userDetails.address
+                    } : null,
                     isEmployee: user.isEmployee,
                     createdAt: user.createdAt,
                     updatedAt: user.updatedAt
@@ -117,9 +101,14 @@ export default class UsersService {
             logger.info(`Attempting to update user subscription - User ID: ${userId}, Subscription ID: ${subscriptionId}`);
             
             // Update user's subscription
-            await db.update(users)
-                .set({ subscriptionId })
-                .where(eq(users.id, userId));
+            await prisma.user.update({
+                where: {
+                    id: userId
+                },
+                data: {
+                    subscriptionId
+                }
+            });
             
             logger.info(`Successfully updated user subscription - User ID: ${userId}, Subscription ID: ${subscriptionId}`);
             return true;
@@ -139,54 +128,18 @@ export default class UsersService {
         try {
             logger.info(`Attempting to fetch user from database - User ID: ${userId}`);
             
-            // Fetch user with all related information
-            const userData = await db.select({
-                id: users.id,
-                email: users.email,
-                role: users.role,
-                subscriptionId: users.subscriptionId,
-                isEmployee: users.isEmployee,
-                createdAt: users.createdAt,
-                updatedAt: users.updatedAt,
-                UserDetails: {
-                    id: userDetails.id,
-                    userId: userDetails.userId,
-                    name: userDetails.name,
-                    imageProfile: userDetails.imageProfile,
-                    phoneNumber: userDetails.phoneNumber,
-                    address: userDetails.address,
-                    createdAt: userDetails.createdAt,
-                    updatedAt: userDetails.updatedAt
+            // Fetch user with all related information using Prisma
+            const userData = await prisma.user.findUnique({
+                where: {
+                    id: userId
                 },
-                subscription: {
-                    id: subscriptionLists.id,
-                    name: subscriptionLists.name,
-                    price: subscriptionLists.price,
-                    currency: subscriptionLists.currency,
-                    description: subscriptionLists.description,
-                    durationValue: subscriptionLists.durationValue,
-                    durationUnit: subscriptionLists.durationUnit,
-                    features: subscriptionLists.features,
-                    status: subscriptionLists.status,
-                    subscribersCount: subscriptionLists.subscribersCount,
-                    totalRevenue: subscriptionLists.totalRevenue,
-                    createdAt: subscriptionLists.createdAt,
-                    updatedAt: subscriptionLists.updatedAt
+                include: {
+                    userDetails: true,
+                    subscription: true
                 }
-            })
-            .from(users)
-            .leftJoin(userDetails, eq(users.id, userDetails.userId))
-            .leftJoin(subscriptionLists, eq(users.subscriptionId, subscriptionLists.id))
-            .where(eq(users.id, userId))
-            .limit(1);
+            });
             
-            if (!userData.length) {
-                logger.warn(`User not found - User ID: ${userId}`);
-                return null;
-            }
-            
-            const user = userData[0];
-            if (!user) {
+            if (!userData) {
                 logger.warn(`User not found - User ID: ${userId}`);
                 return null;
             }
@@ -194,19 +147,34 @@ export default class UsersService {
             logger.info(`Successfully fetched user - User ID: ${userId}`);
             
             return {
-                id: user.id,
-                email: user.email,
-                role: user.role,
-                subscriptionId: user.subscriptionId,
-                subscription: user.subscription ? {
-                    ...user.subscription,
-                    price: Number(user.subscription.price),
-                    totalRevenue: Number(user.subscription.totalRevenue)
+                id: userData.id,
+                email: userData.email,
+                role: userData.role,
+                subscriptionId: userData.subscriptionId,
+                subscription: userData.subscription ? {
+                    id: userData.subscription.id,
+                    name: userData.subscription.name,
+                    price: Number(userData.subscription.price),
+                    currency: userData.subscription.currency,
+                    description: userData.subscription.description,
+                    durationValue: userData.subscription.durationValue,
+                    durationUnit: userData.subscription.durationUnit,
+                    features: userData.subscription.features,
+                    status: userData.subscription.status,
+                    subscribersCount: userData.subscription.subscribersCount,
+                    totalRevenue: Number(userData.subscription.totalRevenue),
+                    createdAt: userData.subscription.createdAt,
+                    updatedAt: userData.subscription.updatedAt
                 } : null,
-                UserDetails: user.UserDetails,
-                isEmployee: user.isEmployee,
-                createdAt: user.createdAt,
-                updatedAt: user.updatedAt
+                UserDetails: userData.userDetails ? {
+                    name: userData.userDetails.name,
+                    imageProfile: userData.userDetails.imageProfile,
+                    phoneNumber: userData.userDetails.phoneNumber,
+                    address: userData.userDetails.address
+                } : null,
+                isEmployee: userData.isEmployee,
+                createdAt: userData.createdAt,
+                updatedAt: userData.updatedAt
             };
             
         } catch (error) {
@@ -235,9 +203,13 @@ export default class UsersService {
             logger.info(`Attempting to create new user - Email: ${userData.email}`);
             
             // Check if user already exists
-            const existingUser = await db.select().from(users).where(eq(users.email, userData.email)).limit(1);
+            const existingUser = await prisma.user.findUnique({
+                where: {
+                    email: userData.email
+                }
+            });
             
-            if (existingUser.length) {
+            if (existingUser) {
                 logger.warn(`User already exists - Email: ${userData.email}`);
                 return {
                     data: null,
@@ -253,85 +225,50 @@ export default class UsersService {
             const hashedPassword = Hash.hash(userData.password, salt);
             
             // Create user with transaction
-            const result = await db.transaction(async (tx) => {
+            const result = await prisma.$transaction(async (tx) => {
                 // Create user
-                const [newUser] = await tx.insert(users).values({
-                    id: generateId(),
-                    email: userData.email,
-                    password: hashedPassword,
-                    role: (userData.role || 'user') as "user" | "admin",
-                    isEmployee: userData.isEmployee || false
-                }).returning();
+                const newUser = await tx.user.create({
+                    data: {
+                        id: generateId(),
+                        email: userData.email,
+                        password: hashedPassword,
+                        role: (userData.role || 'user') as "user" | "admin",
+                        isEmployee: userData.isEmployee || false
+                    },
+                    include: {
+                        userDetails: true,
+                        subscription: true
+                    }
+                });
                 
                 // Create user details if provided
                 if (userData.userDetails && newUser) {
-                    await tx.insert(userDetails).values({
-                        id: generateId(),
-                        userId: newUser.id,
-                        name: userData.userDetails.name,
-                        phoneNumber: userData.userDetails.phoneNumber || null,
-                        address: userData.userDetails.address || null
+                    await tx.userDetails.create({
+                        data: {
+                            id: generateId(),
+                            userId: newUser.id,
+                            name: userData.userDetails.name,
+                            phoneNumber: userData.userDetails.phoneNumber || null,
+                            address: userData.userDetails.address || null
+                        }
+                    });
+                    
+                    // Refetch to include userDetails
+                    return await tx.user.findUnique({
+                        where: {
+                            id: newUser.id
+                        },
+                        include: {
+                            userDetails: true,
+                            subscription: true
+                        }
                     });
                 }
                 
-                // Return user with details
-                if (!newUser) {
-                    return [];
-                }
-                
-                return await db.select({
-                    id: users.id,
-                    email: users.email,
-                    role: users.role,
-                    subscriptionId: users.subscriptionId,
-                    isEmployee: users.isEmployee,
-                    createdAt: users.createdAt,
-                    updatedAt: users.updatedAt,
-                    UserDetails: {
-                        id: userDetails.id,
-                        userId: userDetails.userId,
-                        name: userDetails.name,
-                        imageProfile: userDetails.imageProfile,
-                        phoneNumber: userDetails.phoneNumber,
-                        address: userDetails.address,
-                        createdAt: userDetails.createdAt,
-                        updatedAt: userDetails.updatedAt
-                    },
-                    subscription: {
-                        id: subscriptionLists.id,
-                        name: subscriptionLists.name,
-                        price: subscriptionLists.price,
-                        currency: subscriptionLists.currency,
-                        description: subscriptionLists.description,
-                        durationValue: subscriptionLists.durationValue,
-                        durationUnit: subscriptionLists.durationUnit,
-                        features: subscriptionLists.features,
-                        status: subscriptionLists.status,
-                        subscribersCount: subscriptionLists.subscribersCount,
-                        totalRevenue: subscriptionLists.totalRevenue,
-                        createdAt: subscriptionLists.createdAt,
-                        updatedAt: subscriptionLists.updatedAt
-                    }
-                })
-                .from(users)
-                .leftJoin(userDetails, eq(users.id, userDetails.userId))
-                .leftJoin(subscriptionLists, eq(users.subscriptionId, subscriptionLists.id))
-                .where(eq(users.id, newUser.id))
-                .limit(1);
+                return newUser;
             });
             
-            if (!result.length) {
-                logger.error(`Failed to create user - Email: ${userData.email}`);
-                return {
-                    data: null,
-                    message: "Gagal membuat pengguna baru",
-                    success: false,
-                    errorType: UsersErrorType.INTERNAL_ERROR
-                };
-            }
-            
-            const userResult = result[0];
-            if (!userResult) {
+            if (!result) {
                 logger.error(`Failed to create user - Email: ${userData.email}`);
                 return {
                     data: null,
@@ -342,22 +279,37 @@ export default class UsersService {
             }
             
             const userResponse: iUserDetails = {
-                id: userResult.id,
-                email: userResult.email,
-                role: userResult.role,
-                subscriptionId: userResult.subscriptionId,
-                subscription: userResult.subscription ? {
-                    ...userResult.subscription,
-                    price: Number(userResult.subscription.price),
-                    totalRevenue: Number(userResult.subscription.totalRevenue)
+                id: result.id,
+                email: result.email,
+                role: result.role,
+                subscriptionId: result.subscriptionId,
+                subscription: result.subscription ? {
+                    id: result.subscription.id,
+                    name: result.subscription.name,
+                    price: Number(result.subscription.price),
+                    currency: result.subscription.currency,
+                    description: result.subscription.description,
+                    durationValue: result.subscription.durationValue,
+                    durationUnit: result.subscription.durationUnit,
+                    features: result.subscription.features,
+                    status: result.subscription.status,
+                    subscribersCount: result.subscription.subscribersCount,
+                    totalRevenue: Number(result.subscription.totalRevenue),
+                    createdAt: result.subscription.createdAt,
+                    updatedAt: result.subscription.updatedAt
                 } : null,
-                UserDetails: userResult.UserDetails,
-                isEmployee: userResult.isEmployee,
-                createdAt: userResult.createdAt,
-                updatedAt: userResult.updatedAt
+                UserDetails: result.userDetails ? {
+                    name: result.userDetails.name,
+                    imageProfile: result.userDetails.imageProfile,
+                    phoneNumber: result.userDetails.phoneNumber,
+                    address: result.userDetails.address
+                } : null,
+                isEmployee: result.isEmployee,
+                createdAt: result.createdAt,
+                updatedAt: result.updatedAt
             };
             
-            logger.info(`Successfully created user - ID: ${userResult.id}, Email: ${userResult.email}`);
+            logger.info(`Successfully created user - ID: ${result.id}, Email: ${result.email}`);
             
             return {
                 data: userResponse,
@@ -395,9 +347,13 @@ export default class UsersService {
             logger.info(`Attempting to update user - ID: ${userId}`);
             
             // Check if user exists
-            const existingUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+            const existingUser = await prisma.user.findUnique({
+                where: {
+                    id: userId
+                }
+            });
             
-            if (!existingUser.length) {
+            if (!existingUser) {
                 logger.warn(`User not found - ID: ${userId}`);
                 return {
                     data: null,
@@ -408,10 +364,14 @@ export default class UsersService {
             }
             
             // Check if email is already taken by another user
-            if (updateData.email && existingUser[0] && updateData.email !== existingUser[0].email) {
-                const emailExists = await db.select().from(users).where(eq(users.email, updateData.email)).limit(1);
+            if (updateData.email && updateData.email !== existingUser.email) {
+                const emailExists = await prisma.user.findUnique({
+                    where: {
+                        email: updateData.email
+                    }
+                });
                 
-                if (emailExists.length) {
+                if (emailExists) {
                     logger.warn(`Email already taken - Email: ${updateData.email}`);
                     return {
                         data: null,
@@ -423,93 +383,68 @@ export default class UsersService {
             }
             
             // Update user with transaction
-            const result = await db.transaction(async (tx) => {
+            const result = await prisma.$transaction(async (tx) => {
                 // Update user
-                await tx.update(users).set({
-                    ...(updateData.email && { email: updateData.email }),
-                    ...(updateData.role !== undefined && { role: updateData.role as "user" | "admin" }),
-                    ...(updateData.isEmployee !== undefined && { isEmployee: updateData.isEmployee }),
-                    ...(updateData.subscriptionId !== undefined && { subscriptionId: updateData.subscriptionId })
-                }).where(eq(users.id, userId));
+                await tx.user.update({
+                    where: {
+                        id: userId
+                    },
+                    data: {
+                        ...(updateData.email && { email: updateData.email }),
+                        ...(updateData.role !== undefined && { role: updateData.role as "user" | "admin" }),
+                        ...(updateData.isEmployee !== undefined && { isEmployee: updateData.isEmployee }),
+                        ...(updateData.subscriptionId !== undefined && { subscriptionId: updateData.subscriptionId })
+                    }
+                });
                 
                 // Update user details if provided
                 if (updateData.userDetails) {
                     // Check if user details exist
-                    const existingDetails = await db.select().from(userDetails).where(eq(userDetails.userId, userId)).limit(1);
+                    const existingDetails = await tx.userDetails.findUnique({
+                        where: {
+                            userId: userId
+                        }
+                    });
                     
-                    if (existingDetails.length) {
+                    if (existingDetails) {
                         // Update existing details
-                        await tx.update(userDetails).set({
-                            ...(updateData.userDetails.name !== undefined && { name: updateData.userDetails.name }),
-                            ...(updateData.userDetails.phoneNumber !== undefined && { phoneNumber: updateData.userDetails.phoneNumber }),
-                            ...(updateData.userDetails.address !== undefined && { address: updateData.userDetails.address })
-                        }).where(eq(userDetails.userId, userId));
+                        await tx.userDetails.update({
+                            where: {
+                                userId: userId
+                            },
+                            data: {
+                                ...(updateData.userDetails.name !== undefined && { name: updateData.userDetails.name }),
+                                ...(updateData.userDetails.phoneNumber !== undefined && { phoneNumber: updateData.userDetails.phoneNumber }),
+                                ...(updateData.userDetails.address !== undefined && { address: updateData.userDetails.address })
+                            }
+                        });
                     } else {
                         // Create new details
-                        await tx.insert(userDetails).values({
-                            id: generateId(),
-                            userId,
-                            name: updateData.userDetails.name || '',
-                            phoneNumber: updateData.userDetails.phoneNumber || null,
-                            address: updateData.userDetails.address || null
+                        await tx.userDetails.create({
+                            data: {
+                                id: generateId(),
+                                userId,
+                                name: updateData.userDetails.name || '',
+                                phoneNumber: updateData.userDetails.phoneNumber || null,
+                                address: updateData.userDetails.address || null
+                            }
                         });
                     }
                 }
                 
                 // Return updated user with details
-                return await db.select({
-                    id: users.id,
-                    email: users.email,
-                    role: users.role,
-                    subscriptionId: users.subscriptionId,
-                    isEmployee: users.isEmployee,
-                    createdAt: users.createdAt,
-                    updatedAt: users.updatedAt,
-                    UserDetails: {
-                        id: userDetails.id,
-                        userId: userDetails.userId,
-                        name: userDetails.name,
-                        imageProfile: userDetails.imageProfile,
-                        phoneNumber: userDetails.phoneNumber,
-                        address: userDetails.address,
-                        createdAt: userDetails.createdAt,
-                        updatedAt: userDetails.updatedAt
+                return await tx.user.findUnique({
+                    where: {
+                        id: userId
                     },
-                    subscription: {
-                        id: subscriptionLists.id,
-                        name: subscriptionLists.name,
-                        price: subscriptionLists.price,
-                        currency: subscriptionLists.currency,
-                        description: subscriptionLists.description,
-                        durationValue: subscriptionLists.durationValue,
-                        durationUnit: subscriptionLists.durationUnit,
-                        features: subscriptionLists.features,
-                        status: subscriptionLists.status,
-                        subscribersCount: subscriptionLists.subscribersCount,
-                        totalRevenue: subscriptionLists.totalRevenue,
-                        createdAt: subscriptionLists.createdAt,
-                        updatedAt: subscriptionLists.updatedAt
+                    include: {
+                        userDetails: true,
+                        subscription: true
                     }
-                })
-                .from(users)
-                .leftJoin(userDetails, eq(users.id, userDetails.userId))
-                .leftJoin(subscriptionLists, eq(users.subscriptionId, subscriptionLists.id))
-                .where(eq(users.id, userId))
-                .limit(1);
+                });
             });
             
-            if (!result.length) {
-                logger.error(`Failed to update user - ID: ${userId}`);
-                return {
-                    data: null,
-                    message: "Gagal memperbarui pengguna",
-                    success: false,
-                    errorType: UsersErrorType.INTERNAL_ERROR
-                };
-            }
-            
-            const userResult = result[0];
-            if (!userResult) {
+            if (!result) {
                 logger.error(`Failed to update user - ID: ${userId}`);
                 return {
                     data: null,
@@ -520,19 +455,34 @@ export default class UsersService {
             }
             
             const userResponse: iUserDetails = {
-                id: userResult.id,
-                email: userResult.email,
-                role: userResult.role,
-                subscriptionId: userResult.subscriptionId,
-                subscription: userResult.subscription ? {
-                    ...userResult.subscription,
-                    price: Number(userResult.subscription.price),
-                    totalRevenue: Number(userResult.subscription.totalRevenue)
+                id: result.id,
+                email: result.email,
+                role: result.role,
+                subscriptionId: result.subscriptionId,
+                subscription: result.subscription ? {
+                    id: result.subscription.id,
+                    name: result.subscription.name,
+                    price: Number(result.subscription.price),
+                    currency: result.subscription.currency,
+                    description: result.subscription.description,
+                    durationValue: result.subscription.durationValue,
+                    durationUnit: result.subscription.durationUnit,
+                    features: result.subscription.features,
+                    status: result.subscription.status,
+                    subscribersCount: result.subscription.subscribersCount,
+                    totalRevenue: Number(result.subscription.totalRevenue),
+                    createdAt: result.subscription.createdAt,
+                    updatedAt: result.subscription.updatedAt
                 } : null,
-                UserDetails: userResult.UserDetails,
-                isEmployee: userResult.isEmployee,
-                createdAt: userResult.createdAt,
-                updatedAt: userResult.updatedAt
+                UserDetails: result.userDetails ? {
+                    name: result.userDetails.name,
+                    imageProfile: result.userDetails.imageProfile,
+                    phoneNumber: result.userDetails.phoneNumber,
+                    address: result.userDetails.address
+                } : null,
+                isEmployee: result.isEmployee,
+                createdAt: result.createdAt,
+                updatedAt: result.updatedAt
             };
             
             logger.info(`Successfully updated user - ID: ${userId}`);
@@ -559,9 +509,13 @@ export default class UsersService {
             logger.info(`Attempting to delete user - ID: ${userId}`);
             
             // Check if user exists
-            const existingUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+            const existingUser = await prisma.user.findUnique({
+                where: {
+                    id: userId
+                }
+            });
             
-            if (!existingUser.length) {
+            if (!existingUser) {
                 logger.warn(`User not found - ID: ${userId}`);
                 return {
                     data: null,
@@ -571,12 +525,20 @@ export default class UsersService {
             }
             
             // Delete user with transaction (will cascade delete related records)
-            await db.transaction(async (tx) => {
+            await prisma.$transaction(async (tx) => {
                 // Delete user details if exists
-                await tx.delete(userDetails).where(eq(userDetails.userId, userId));
+                await tx.userDetails.deleteMany({
+                    where: {
+                        userId: userId
+                    }
+                });
                 
-                // Delete user
-                await tx.delete(users).where(eq(users.id, userId));
+                // Delete user (will cascade delete related records)
+                await tx.user.delete({
+                    where: {
+                        id: userId
+                    }
+                });
             });
             
             logger.info(`Successfully deleted user - ID: ${userId}`);

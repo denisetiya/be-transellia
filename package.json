@@ -13,16 +13,17 @@
     "start": "node dist/index.js",
     "start:prod": "node dist/index.js",
     "build": "pnpm run lint && tsc --skipLibCheck",
-    "postinstall": "pnpm db:generate",
+    "postinstall": "pnpm prisma generate",
     "type-check": "pnpm tsc --noEmit",
     "type-check:watch": "pnpm tsc --noEmit --watch",
     "compile": "pnpm tsc",
     "lint": "pnpm eslint .",
     "lint:fix": "pnpm eslint . --fix",
-    "db:generate": "pnpm drizzle-kit generate",
-    "db:push": "pnpm drizzle-kit push",
-    "db:migrate": "pnpm drizzle-kit migrate",
-    "db:studio": "pnpm drizzle-kit studio"
+    "db:generate": "pnpm prisma generate",
+    "db:push": "pnpm prisma db push",
+    "db:migrate": "pnpm prisma migrate dev",
+    "db:studio": "pnpm prisma studio",
+    "db:seed": "pnpm tsx prisma/seed.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -31,10 +32,10 @@
     "@types/express": "5.0.5",
     "@types/midtrans-client": "^1.4.0",
     "@types/node": "^24.10.1",
-    "drizzle-kit": "^0.31.7",
     "eslint": "^9.39.1",
     "globals": "^16.5.0",
     "jiti": "^2.6.1",
+    "prisma": "^5.22.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.47.0"
@@ -43,15 +44,12 @@
     "typescript": "^5.5.0"
   },
   "dependencies": {
-    "@types/pg": "^8.15.6",
+    "@prisma/client": "^5.22.0",
     "cookie": "^1.0.2",
     "dotenv": "^17.2.3",
-    "drizzle-orm": "^0.44.7",
     "express": "5.1.0",
     "firebase-admin": "^13.6.0",
     "midtrans-client": "^1.4.3",
-    "pg": "^8.16.3",
-    "postgres": "^3.4.7",
     "zod": "^4.1.12",
     "zustand": "^5.0.8"
   }
