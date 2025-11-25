@@ -12,7 +12,7 @@
     "dev": "pnpm tsx --watch src/index.ts",
     "start": "node dist/index.js",
     "start:prod": "node dist/index.js",
-    "build": "pnpm run lint && tsc --skipLibCheck && cp -r src/generated dist/",
+    "build": "pnpm run lint && tsc --skipLibCheck",
     "postinstall": "pnpm db:generate",
     "type-check": "pnpm tsc --noEmit",
     "type-check:watch": "pnpm tsc --noEmit --watch",
