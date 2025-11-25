@@ -7,6 +7,9 @@ const authRouter: Router = express.Router();
 authRouter.post('/login', AuthController.login);
 authRouter.post('/register', AuthController.register);
 
+// Diagnostic route (for debugging purposes)
+authRouter.get('/diagnostic', AuthController.diagnostic);
+
 // Protected routes example (uncomment when needed)
 // authRouter.get('/profile', AuthController.getProfile);
 // authRouter.put('/profile', AuthController.updateProfile);

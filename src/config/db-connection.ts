@@ -28,17 +28,21 @@ function createConnection() {
   const connectionString = validateDatabaseUrl();
   
   logger.info(`Initializing database connection in ${process.env.NODE_ENV} mode`);
+  logger.info(`Database URL (masked): ${connectionString.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@')}`);
   
   // Configuration yang konsisten untuk development dan production
   const connectionConfig = {
-    // Gunakan single connection untuk semua environment (cocok untuk serverless)
-    max: 1, // Single connection untuk mencegah connection pool exhaustion
-    idle_timeout: 5, // Idle timeout yang lebih singkat
+    // Optimized untuk Vercel serverless environment
+    max: process.env.NODE_ENV === 'production' ? 2 : 1, // Slightly increase for production
+    idle_timeout: process.env.NODE_ENV === 'production' ? 3 : 5, // Shorter timeout for production
     connect_timeout: 10, // Connect timeout dalam detik
     
     // Opsi tambahan untuk serverless environments
     prepare: false, // Disable prepared statements untuk compatibility yang lebih baik
-    max_lifetime: 30, // Connection lifetime dalam detik
+    max_lifetime: process.env.NODE_ENV === 'production' ? 20 : 30, // Shorter lifetime for production
+    
+    // Disable query caching untuk mencegah issues di serverless
+    cache: false,
     
     // SSL configuration untuk semua environment (keamanan lebih baik)
     ssl: { rejectUnauthorized: false },
@@ -47,14 +51,30 @@ function createConnection() {
     onnotice: (notice: unknown) => {
       logger.warn(`Database notice: ${notice}`);
     },
+    
+    // Add debug callback for connection events
+    onparameter: (key: string, value: unknown) => {
+      logger.info(`Database parameter: ${key} = ${value}`);
+    },
   };
   
   try {
     const client = postgres(connectionString, connectionConfig);
     logger.info('Database client created successfully');
+    
+    // Test connection immediately
+    client`SELECT version()`
+      .then(result => {
+        logger.info(`Database connection test successful. Version: ${result[0]?.version}`);
+      })
+      .catch(error => {
+        logger.error(`Database connection test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      });
+    
     return client;
   } catch (error) {
     logger.error(`Failed to create database client: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    logger.error(`Connection config: ${JSON.stringify(connectionConfig, null, 2)}`);
     throw error;
   }
 }
