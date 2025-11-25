@@ -123,14 +123,7 @@ export default class AuthService {
 
             // Create user with transaction for data consistency
             const newUser = await db.transaction(async (tx) => {
-                // Create user details first
-                await tx.insert(userDetails).values({
-                    id: userDetailsId,
-                    userId: userId,
-                    name: data.name
-                });
-
-                // Then create user
+                // Create user first to satisfy foreign key constraint
                 const user = await tx.insert(users).values({
                     id: userId,
                     email: data.email,
@@ -139,6 +132,13 @@ export default class AuthService {
                     isEmployee: false,
                     subscriptionId: 'cmesn7has0000d5etmb7jw21s' // Default subscription
                 }).returning();
+
+                // Then create user details with valid user reference
+                await tx.insert(userDetails).values({
+                    id: userDetailsId,
+                    userId: userId,
+                    name: data.name
+                });
 
                 return user[0];
             });
@@ -179,6 +179,12 @@ export default class AuthService {
             };
 
         } catch (error) {
+            // Log detailed error information for debugging
+            if (error instanceof Error) {
+                logger.error(`Registration error details - Email: ${data.email}, Error: ${error.message}, Stack: ${error.stack}`);
+            } else {
+                logger.error(`Registration error details - Email: ${data.email}, Error: ${JSON.stringify(error)}`);
+            }
             return AuthErrorHandler.handleDatabaseError(error, data.email, 'registration');
         }
     }

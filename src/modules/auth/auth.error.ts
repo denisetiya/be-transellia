@@ -69,10 +69,19 @@ export default class AuthErrorHandler {
             }
 
             // Handle foreign key constraint errors
-            if (error.message.includes('Foreign key constraint')) {
+            if (error.message.includes('Foreign key constraint') || error.message.includes('foreign key constraint')) {
                 return this.createServiceError(
                     AuthErrorType.FOREIGN_KEY_ERROR,
                     "Data referensi tidak valid. Silakan coba lagi.",
+                    email
+                );
+            }
+            
+            // Handle specific foreign key violation for user_details
+            if (error.message.includes('user_details_user_id_fkey') || error.message.includes('violates foreign key constraint')) {
+                return this.createServiceError(
+                    AuthErrorType.FOREIGN_KEY_ERROR,
+                    "Gagal membuat detail user. Silakan coba lagi.",
                     email
                 );
             }
