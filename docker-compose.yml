@@ -32,7 +32,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: 3000
+      PORT: 30000
       DATABASE_URL: postgresql://postgres:${DATABASE_PASSWORD:-postgres123}@postgres:5432/transellia
       # Production Environment Variables
       API_KEY: ${API_KEY}
@@ -45,7 +45,7 @@ services:
       MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
     ports:
-      - "3000:3000"
+      - "30000:30000"
     depends_on:
       postgres:
         condition: service_healthy
