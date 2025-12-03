@@ -26,9 +26,6 @@ RUN pnpm db:generate
 # Build the application
 RUN pnpm build
 
-# Clean up devDependencies to reduce production image size (skip postinstall scripts)
-RUN pnpm prune --prod --ignore-scripts
-
 # Production stage
 FROM node:18-alpine AS production
 
@@ -42,21 +39,11 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nodejs -u 1001
 
-# Copy package files
-COPY package.json ./
-COPY pnpm-lock.yaml* ./
+# Copy everything from base stage (including node_modules, dist, and generated prisma client)
+COPY --from=base /app ./
 
-# Install production dependencies (skip postinstall scripts)
-RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile --prod --ignore-scripts; else pnpm install --prod --ignore-scripts; fi
-
-# Copy generated Prisma client
-COPY --from=base /app/src/generated ./src/generated
-
-# Copy built application
-COPY --from=base /app/dist ./dist
-
-# Copy Prisma schema for potential migrations
-COPY --from=base /app/prisma ./prisma
+# Change ownership of the app directory to nodejs user
+RUN chown -R nodejs:nodejs /app
 
 # Change ownership of the app directory to nodejs user
 RUN chown -R nodejs:nodejs /app
