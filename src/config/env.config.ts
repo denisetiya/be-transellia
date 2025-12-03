@@ -27,7 +27,7 @@ let env : {
 if (process.env.NODE_ENV === 'production') {
     env = {
       NODE_ENV: process.env.NODE_ENV,
-      PORT: process.env.PORT ? Number(process.env.PORT) : 3000,
+      PORT: process.env.PORT ? Number(process.env.PORT) : 30000,
       API_KEY: validateEnvVar('API_KEY', process.env.API_KEY),
       SALT: validateEnvVar('SALT', process.env.SALT),
       JWT_SECRET: validateEnvVar('JWT_SECRET', process.env.JWT_SECRET),
@@ -41,7 +41,7 @@ if (process.env.NODE_ENV === 'production') {
  } else {
     env = {
       NODE_ENV: process.env.NODE_ENV || 'development',
-      PORT: process.env.PORT_DEV ? Number(process.env.PORT_DEV) : 3000,
+      PORT: process.env.PORT_DEV ? Number(process.env.PORT_DEV) : 30000,
       SALT: validateEnvVar('SALT_DEV', process.env.SALT_DEV),
       API_KEY: validateEnvVar('API_KEY_DEV', process.env.API_KEY_DEV),
       JWT_SECRET: validateEnvVar('JWT_SECRET_DEV', process.env.JWT_SECRET_DEV),
