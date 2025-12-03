@@ -1,8 +1,8 @@
 # Use Node.js 18 Alpine as base image
 FROM node:18-alpine AS base
 
-# Install pnpm
-RUN npm install -g pnpm
+# Install OpenSSL and pnpm
+RUN apk add --no-cache openssl && npm install -g pnpm
 
 # Set working directory
 WORKDIR /app
@@ -11,7 +11,10 @@ WORKDIR /app
 COPY package.json ./
 COPY pnpm-lock.yaml* ./
 
-# Install dependencies
+# Copy Prisma schema first to avoid postinstall issues
+COPY prisma ./prisma
+
+# Install all dependencies (including devDependencies for build)
 RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi
 
 # Copy the rest of the application
@@ -23,11 +26,14 @@ RUN pnpm db:generate
 # Build the application
 RUN pnpm build
 
+# Clean up devDependencies to reduce production image size (skip postinstall scripts)
+RUN pnpm prune --prod --ignore-scripts
+
 # Production stage
 FROM node:18-alpine AS production
 
-# Install pnpm
-RUN npm install -g pnpm
+# Install OpenSSL and pnpm
+RUN apk add --no-cache openssl && npm install -g pnpm
 
 # Set working directory
 WORKDIR /app
@@ -40,8 +46,8 @@ RUN adduser -S nodejs -u 1001
 COPY package.json ./
 COPY pnpm-lock.yaml* ./
 
-# Install only production dependencies
-RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile --prod; else pnpm install --prod; fi
+# Install production dependencies (skip postinstall scripts)
+RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile --prod --ignore-scripts; else pnpm install --prod --ignore-scripts; fi
 
 # Copy generated Prisma client
 COPY --from=base /app/src/generated ./src/generated
