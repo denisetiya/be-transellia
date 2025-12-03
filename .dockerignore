@@ -136,9 +136,8 @@ test-schema.js
 dist/
 src/generated/
 
-# Lock files (will be copied separately)
+# Lock files (exclude bun.lock but keep pnpm-lock.yaml)
 bun.lock
-pnpm-lock.yaml
 
 # Config files that might contain sensitive info
 vercel.json
