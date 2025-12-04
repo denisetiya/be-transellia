@@ -23,6 +23,7 @@ COPY . .
 # Generate Prisma client
 RUN pnpm db:generate
 
+
 # Build the application
 RUN pnpm build
 
@@ -42,11 +43,15 @@ RUN adduser -S nodejs -u 1001
 # Copy everything from base stage (including node_modules, dist, and generated prisma client)
 COPY --from=base /app ./
 
-# Change ownership of the app directory to nodejs user
-RUN chown -R nodejs:nodejs /app
+# Copy the startup script
+COPY scripts/start-with-migrations.sh /app/start-with-migrations.sh
 
 # Change ownership of the app directory to nodejs user
 RUN chown -R nodejs:nodejs /app
+
+# Make the startup script executable
+RUN chmod +x /app/start-with-migrations.sh
+
 USER nodejs
 
 # Expose port
@@ -56,5 +61,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
-# Start the application
-CMD ["node", "dist/index.js"]
+# Start the application with migrations
+CMD ["/app/start-with-migrations.sh"]
