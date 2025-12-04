@@ -313,7 +313,6 @@ export default class AuthService {
                         password: hashedPassword,
                         role: 'user', // Use lowercase to match schema enum
                         isEmployee: false,
-                        subscriptionId: 'cmesn7has0000d5etmb7jw21s' // Default subscription
                     }
                 });
 

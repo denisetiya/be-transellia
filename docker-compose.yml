@@ -54,14 +54,23 @@ services:
     volumes:
       # Mount for logs (optional)
       - ./logs:/app/logs
+    # Run migrations before starting the application
+    command: >
+      sh -c "
+        echo 'Running database migrations...' &&
+        pnpm db:migrate &&
+        echo 'Migrations completed successfully!' &&
+        echo 'Starting application...' &&
+        node dist/index.js
+      "
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s  # Increased to allow time for migrations
 
-  # Database Migration Service (runs once and exits)
+  # Database Migration Service (runs once and exits) - kept for manual use
   migrate:
     build:
       context: .
