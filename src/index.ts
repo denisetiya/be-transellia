@@ -4,6 +4,7 @@ import appRouter from './app.routes';
 import env from './config/env.config';
 import logger from './lib/lib.logger';
 import GlobalErrorHandler from './lib/lib.error.handler';
+import AdminService from './modules/admin/admin.service';
 
 
 // Import type extensions to ensure they are loaded
@@ -20,6 +21,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   const allowedOrigins = env.CORS_ORIGINS.split(',');
   const origin = req.headers.origin;
   
+  // Handle both HTTP and HTTPS origins
   if (allowedOrigins.includes(origin || '')) {
     res.header('Access-Control-Allow-Origin', origin || '');
   }
@@ -27,6 +29,14 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-api-key');
   res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Add security headers for HTTPS
+  if (req.protocol === 'https') {
+    res.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.header('X-Content-Type-Options', 'nosniff');
+    res.header('X-Frame-Options', 'DENY');
+    res.header('X-XSS-Protection', '1; mode=block');
+  }
   
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
@@ -52,11 +62,35 @@ app.get('/', (req: Request, res: Response) => {
 // This should be the last middleware registered
 app.use(GlobalErrorHandler.expressErrorHandler);
 
+// Initialize admin user (async operation)
+const initializeAdmin = async () => {
+  try {
+    const result = await AdminService.initializeAdmin();
+    if (result.success) {
+      logger.info(`Admin initialization: ${result.message}`);
+      if (result.adminCreated) {
+        logger.info('New admin user was created from environment variables');
+      }
+    } else {
+      logger.error(`Admin initialization failed: ${result.message}`);
+    }
+  } catch (error) {
+    logger.error(`Admin initialization error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
 // Start server only if not in Vercel environment
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-  app.listen(env.PORT, () => {
+  app.listen(env.PORT, async () => {
     logger.info(`Server is running on http://localhost:${env.PORT}`);
+    
+    // Initialize admin after server starts
+    await initializeAdmin();
   });
+} else {
+  // For Vercel/serverless environments, initialize admin on module load
+  initializeAdmin();
 }
+
 // Export app for Vercel
 export default app;

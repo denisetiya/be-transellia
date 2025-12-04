@@ -22,6 +22,9 @@ let env : {
   MIDTRANS_SERVER_KEY : string;
   MIDTRANS_CLIENT_KEY :  string;
   CORS_ORIGINS: string;
+  ADMIN_EMAIL?: string;
+  ADMIN_PASSWORD?: string;
+  ADMIN_NAME?: string;
 };
 
 if (process.env.NODE_ENV === 'production') {
@@ -37,6 +40,9 @@ if (process.env.NODE_ENV === 'production') {
       MIDTRANS_SERVER_KEY : validateEnvVar('MIDTRANS_SERVER_KEY', process.env.MIDTRANS_SERVER_KEY),
       MIDTRANS_CLIENT_KEY :  validateEnvVar('MIDTRANS_CLIENT_KEY', process.env.MIDTRANS_CLIENT_KEY),
       CORS_ORIGINS: process.env.CORS_ORIGINS || "http://localhost:5173,http://localhost:3000,https://admin-transellia.vercel.app",
+      ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+      ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
+      ADMIN_NAME: process.env.ADMIN_NAME,
     };
  } else {
     env = {
@@ -51,6 +57,9 @@ if (process.env.NODE_ENV === 'production') {
       MIDTRANS_SERVER_KEY : validateEnvVar('MIDTRANS_SERVER_KEY_DEV', process.env.MIDTRANS_SERVER_KEY_DEV),
       MIDTRANS_CLIENT_KEY :  validateEnvVar('MIDTRANS_CLIENT_KEY_DEV', process.env.MIDTRANS_CLIENT_KEY_DEV),
       CORS_ORIGINS: process.env.CORS_ORIGINS || "http://localhost:5173,http://localhost:3000,https://admin-transellia.vercel.app",
+      ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+      ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
+      ADMIN_NAME: process.env.ADMIN_NAME,
     };
  }
 
