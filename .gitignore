@@ -1,14 +1,27 @@
 # dependencies (bun install)
 node_modules
 
+.docker.example
 secrets
 dist
 
+# Environment files
 .env
 .env.development.local
 .env.test.local
 .env.production.local
 .env.local
+.env.ssl
+
+# SSL certificates and directories
+certbot/
+*.pem
+*.crt
+*.key
+
+# Logs
+logs/
+*.log
 
 # caches
 .eslintcache
