@@ -70,6 +70,76 @@ services:
       retries: 3
       start_period: 60s  # Increased to allow time for migrations
 
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:alpine
+    container_name: transellia-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - backend
+    networks:
+      - transellia-network
+    environment:
+      - DOMAIN=${DOMAIN:-transellia.com}
+      - EXTRA_DOMAINS=${EXTRA_DOMAINS}
+      - SSL_PROTOCOLS=${SSL_PROTOCOLS:-TLSv1.2 TLSv1.3}
+      - SSL_CIPHERS=${SSL_CIPHERS:-ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384}
+      - HSTS_MAX_AGE=${HSTS_MAX_AGE:-31536000}
+      - HSTS_INCLUDE_SUBDOMAINS=${HSTS_INCLUDE_SUBDOMAINS:-true}
+      - RATE_LIMIT_REQUESTS_PER_SECOND=${RATE_LIMIT_REQUESTS_PER_SECOND:-10}
+      - RATE_LIMIT_BURST=${RATE_LIMIT_BURST:-20}
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: >
+      sh -c "
+        envsubst '\$$DOMAIN $$EXTRA_DOMAINS $$SSL_PROTOCOLS $$SSL_CIPHERS $$HSTS_MAX_AGE $$HSTS_INCLUDE_SUBDOMAINS $$RATE_LIMIT_REQUESTS_PER_SECOND $$RATE_LIMIT_BURST'
+        < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf &&
+        nginx -g 'daemon off;'
+      "
+
+  # Certbot for SSL Certificate Management
+  certbot:
+    image: certbot/certbot:latest
+    container_name: transellia-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    environment:
+      - DOMAIN=${DOMAIN:-transellia.com}
+      - EXTRA_DOMAINS=${EXTRA_DOMAINS}
+      - EMAIL=${EMAIL:-admin@transellia.com}
+      - LETSENCRYPT_ENV=${LETSENCRYPT_ENV:-production}
+    entrypoint: >
+      sh -c "
+        if [ ! -d /etc/letsencrypt/live/$$DOMAIN ]; then
+          EXTRA_DOMAINS_ARGS=$$(echo $$EXTRA_DOMAINS | sed 's/,/ -d /g' | sed 's/^/ -d /' | sed 's/  *//');
+          if [ \"$$LETSENCRYPT_ENV\" = \"staging\" ]; then
+            LETSENCRYPT_EXTRA_ARGS=--staging;
+          else
+            LETSENCRYPT_EXTRA_ARGS=;
+          fi;
+          certbot certonly --webroot --webroot-path=/var/www/certbot
+          --email $$EMAIL
+          --agree-tos
+          --no-eff-email
+          -d $$DOMAIN $$EXTRA_DOMAINS_ARGS
+          $$LETSENCRYPT_EXTRA_ARGS;
+        fi;
+        trap exit TERM;
+        while :; do certbot renew; sleep 12h & wait $${!}; done;
+      "
+    restart: unless-stopped
+
   # Database Migration Service (runs once and exits) - kept for manual use
   migrate:
     build:
