@@ -6,6 +6,7 @@ services:
     image: postgres:15-alpine
     container_name: transellia-postgres
     restart: unless-stopped
+    privileged: true
     environment:
       POSTGRES_DB: transellia
       POSTGRES_USER: postgres
@@ -30,6 +31,7 @@ services:
       dockerfile: Dockerfile
     container_name: transellia-backend
     restart: unless-stopped
+    privileged: true
     environment:
       NODE_ENV: production
       PORT: 30000
@@ -81,6 +83,7 @@ services:
     image: nginx:alpine
     container_name: transellia-nginx
     restart: unless-stopped
+    privileged: true
     ports:
       - "8080:80"
       - "8443:443"
@@ -124,6 +127,7 @@ services:
       - LETSENCRYPT_ENV=${LETSENCRYPT_ENV:-production}
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     restart: unless-stopped
+    privileged: true
 
   # Database Migration Service (runs once and exits) - kept for manual use
   migrate:
