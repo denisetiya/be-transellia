@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # PostgreSQL Database
@@ -64,11 +64,17 @@ services:
         node dist/index.js
       "
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s  # Increased to allow time for migrations
+      start_period: 60s # Increased to allow time for migrations
 
   # Nginx Reverse Proxy with SSL
   nginx:
@@ -76,10 +82,11 @@ services:
     container_name: transellia-nginx
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"
+      - "8443:443"
     volumes:
       - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./nginx/entrypoint.sh:/entrypoint.sh:ro
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
     depends_on:
@@ -100,12 +107,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    command: >
-      sh -c "
-        envsubst '\$$DOMAIN $$EXTRA_DOMAINS $$SSL_PROTOCOLS $$SSL_CIPHERS $$HSTS_MAX_AGE $$HSTS_INCLUDE_SUBDOMAINS $$RATE_LIMIT_REQUESTS_PER_SECOND $$RATE_LIMIT_BURST'
-        < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf &&
-        nginx -g 'daemon off;'
-      "
+    command: ["/bin/sh", "/entrypoint.sh"]
 
   # Certbot for SSL Certificate Management
   certbot:
@@ -114,30 +116,13 @@ services:
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
+      - ./nginx/certbot-entrypoint.sh:/entrypoint.sh:ro
     environment:
       - DOMAIN=${DOMAIN:-transellia.com}
       - EXTRA_DOMAINS=${EXTRA_DOMAINS}
       - EMAIL=${EMAIL:-admin@transellia.com}
       - LETSENCRYPT_ENV=${LETSENCRYPT_ENV:-production}
-    entrypoint: >
-      sh -c "
-        if [ ! -d /etc/letsencrypt/live/$$DOMAIN ]; then
-          EXTRA_DOMAINS_ARGS=$$(echo $$EXTRA_DOMAINS | sed 's/,/ -d /g' | sed 's/^/ -d /' | sed 's/  *//');
-          if [ \"$$LETSENCRYPT_ENV\" = \"staging\" ]; then
-            LETSENCRYPT_EXTRA_ARGS=--staging;
-          else
-            LETSENCRYPT_EXTRA_ARGS=;
-          fi;
-          certbot certonly --webroot --webroot-path=/var/www/certbot
-          --email $$EMAIL
-          --agree-tos
-          --no-eff-email
-          -d $$DOMAIN $$EXTRA_DOMAINS_ARGS
-          $$LETSENCRYPT_EXTRA_ARGS;
-        fi;
-        trap exit TERM;
-        while :; do certbot renew; sleep 12h & wait $${!}; done;
-      "
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     restart: unless-stopped
 
   # Database Migration Service (runs once and exits) - kept for manual use
