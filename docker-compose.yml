@@ -1,7 +1,7 @@
 services:
   # Traefik Reverse Proxy with SSL
   traefik:
-    image: traefik:v3.2
+    image: traefik:v2.11
     container_name: transellia-traefik
     restart: unless-stopped
     command:
@@ -24,6 +24,8 @@ services:
       # Logging
       - "--log.level=INFO"
       - "--accesslog=true"
+      # Ping for healthcheck
+      - "--ping=true"
     ports:
       - "8080:80"
       - "8443:443"
