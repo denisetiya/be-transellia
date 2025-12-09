@@ -1,16 +1,11 @@
 services:
-  # Caddy Reverse Proxy with Auto SSL
-  caddy:
-    image: caddy:2-alpine
-    container_name: transellia-caddy
+  # Nginx Reverse Proxy (internal)
+  nginx:
+    image: nginx:alpine
+    container_name: transellia-nginx
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - transellia-network
     depends_on:
@@ -20,6 +15,21 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # Cloudflare Tunnel
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: transellia-cloudflared
+    restart: unless-stopped
+    depends_on:
+      - nginx
+    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
+    environment:
+      - CF_TUNNEL_TOKEN=${CF_TUNNEL_TOKEN}
+      - TUNNEL_TRANSPORT_KEEPALIVE=60s
+      - TUNNEL_ORIGIN_CERT=/dev/null
+    networks:
+      - transellia-network
 
   # PostgreSQL Database
   postgres:
@@ -116,10 +126,6 @@ services:
 
 volumes:
   postgres_data:
-    driver: local
-  caddy_data:
-    driver: local
-  caddy_config:
     driver: local
 
 networks:
