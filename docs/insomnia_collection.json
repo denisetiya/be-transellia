@@ -1,0 +1,1153 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-12-12T14:20:30.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_transellia",
+      "parentId": null,
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "name": "Transellia Backend API",
+      "description": "API Collection for Transellia Backend Services",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_base",
+      "parentId": "wrk_transellia",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:30000/api/v1",
+        "api_key": "your-api-key-here",
+        "token": ""
+      },
+      "dataPropertyOrder": {
+        "&": ["base_url", "api_key", "token"]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1702399230000,
+      "_type": "environment"
+    },
+    {
+      "_id": "env_local",
+      "parentId": "env_base",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "name": "Local",
+      "data": {
+        "base_url": "http://localhost:30000/api/v1"
+      },
+      "dataPropertyOrder": {
+        "&": ["base_url"]
+      },
+      "color": "#7d4e00",
+      "isPrivate": false,
+      "metaSortKey": 1702399230001,
+      "_type": "environment"
+    },
+    {
+      "_id": "env_dev",
+      "parentId": "env_base",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "name": "Dev",
+      "data": {
+        "base_url": "https://transellia.denisetiya.site/api/v1"
+      },
+      "dataPropertyOrder": {
+        "&": ["base_url"]
+      },
+      "color": "#27ae60",
+      "isPrivate": false,
+      "metaSortKey": 1702399230002,
+      "_type": "environment"
+    },
+    {
+      "_id": "fld_auth",
+      "parentId": "wrk_transellia",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "name": "🔐 Authentication",
+      "description": "Authentication endpoints for user login and registration",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1702399230000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_login",
+      "parentId": "fld_auth",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/auth/login",
+      "name": "Login",
+      "description": "Authenticate user with email and password",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"yourpassword123\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230001,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_register",
+      "parentId": "fld_auth",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/auth/register",
+      "name": "Register",
+      "description": "Register a new user account",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"yourpassword123\",\n  \"name\": \"New User\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230002,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_diagnostic",
+      "parentId": "fld_auth",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/auth/diagnostic",
+      "name": "Diagnostic",
+      "description": "Test database connectivity (debug purposes)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230003,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_users",
+      "parentId": "wrk_transellia",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "name": "👤 Users",
+      "description": "User management endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1702399230010,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_get_my_profile",
+      "parentId": "fld_users",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/users/me",
+      "name": "Get My Profile",
+      "description": "Get current authenticated user profile",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230011,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_all_users",
+      "parentId": "fld_users",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/users",
+      "name": "Get All Users (Admin)",
+      "description": "Get all users with pagination (Admin only)",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "page",
+          "value": "1",
+          "description": "Page number (default: 1)"
+        },
+        {
+          "name": "limit",
+          "value": "10",
+          "description": "Items per page (default: 10, max: 100)"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230012,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_user_by_id",
+      "parentId": "fld_users",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/users/:id",
+      "name": "Get User by ID (Admin)",
+      "description": "Get a specific user by ID (Admin only)",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "id",
+          "value": "user-id-here",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230013,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_create_user",
+      "parentId": "fld_users",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/users",
+      "name": "Create User (Admin)",
+      "description": "Create a new user (Admin only)",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"user\",\n  \"isEmployee\": false,\n  \"userDetails\": {\n    \"name\": \"New User Name\",\n    \"phoneNumber\": \"081234567890\",\n    \"address\": \"Jl. Example No. 123\"\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230014,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_update_user",
+      "parentId": "fld_users",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/users/:id",
+      "name": "Update User (Admin)",
+      "description": "Update an existing user (Admin only)",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"updated@example.com\",\n  \"role\": \"user\",\n  \"isEmployee\": true,\n  \"userDetails\": {\n    \"name\": \"Updated Name\",\n    \"phoneNumber\": \"081234567899\",\n    \"address\": \"Jl. Updated No. 456\"\n  }\n}"
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "value": "user-id-here",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230015,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_delete_user",
+      "parentId": "fld_users",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/users/:id",
+      "name": "Delete User (Admin)",
+      "description": "Delete a user (Admin only)",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [
+        {
+          "name": "id",
+          "value": "user-id-here",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230016,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_update_user_subscription",
+      "parentId": "fld_users",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/users/:id/subscription",
+      "name": "Update User Subscription (Admin)",
+      "description": "Update a user's subscription (Admin only)",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"subscriptionId\": \"subscription-id-here\"\n}"
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "value": "user-id-here",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230017,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_subscriptions",
+      "parentId": "wrk_transellia",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "name": "💳 Subscriptions",
+      "description": "Subscription management endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1702399230020,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_get_all_subscriptions",
+      "parentId": "fld_subscriptions",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/subscriptions",
+      "name": "Get All Subscriptions",
+      "description": "Get all subscriptions with pagination",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "page",
+          "value": "1",
+          "description": "Page number (default: 1)"
+        },
+        {
+          "name": "limit",
+          "value": "10",
+          "description": "Items per page (default: 10, max: 100)"
+        }
+      ],
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230021,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_subscription_by_id",
+      "parentId": "fld_subscriptions",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/subscriptions/:id",
+      "name": "Get Subscription by ID",
+      "description": "Get a specific subscription by ID",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "id",
+          "value": "subscription-id-here",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230022,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_pay_subscription",
+      "parentId": "fld_subscriptions",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/subscriptions/pay",
+      "name": "Pay for Subscription",
+      "description": "Process payment for a subscription",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"subscriptionId\": \"subscription-id-here\",\n  \"paymentMethod\": \"va\",\n  \"bank\": \"bca\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230023,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_pay_subscription_qr",
+      "parentId": "fld_subscriptions",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/subscriptions/pay",
+      "name": "Pay for Subscription (QR)",
+      "description": "Process payment for a subscription using QR",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"subscriptionId\": \"subscription-id-here\",\n  \"paymentMethod\": \"qr\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230024,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_pay_subscription_wallet",
+      "parentId": "fld_subscriptions",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/subscriptions/pay",
+      "name": "Pay for Subscription (E-Wallet)",
+      "description": "Process payment for a subscription using E-Wallet",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"subscriptionId\": \"subscription-id-here\",\n  \"paymentMethod\": \"wallet\",\n  \"walletProvider\": \"gopay\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230025,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_subscription_webhook",
+      "parentId": "fld_subscriptions",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/subscriptions/webhook",
+      "name": "Payment Webhook (Midtrans)",
+      "description": "Webhook endpoint for Midtrans payment notifications",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"order_id\": \"SUB_subscription-id_user-id_1702399230\",\n  \"transaction_status\": \"settlement\",\n  \"fraud_status\": \"accept\",\n  \"transaction_id\": \"tx-12345\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230026,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_users_by_subscription",
+      "parentId": "fld_subscriptions",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/subscriptions/:id/users",
+      "name": "Get Users by Subscription (Admin)",
+      "description": "Get all users with a specific subscription (Admin only)",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "id",
+          "value": "subscription-id-here",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230027,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_create_subscription",
+      "parentId": "fld_subscriptions",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/subscriptions",
+      "name": "Create Subscription (Admin)",
+      "description": "Create a new subscription plan (Admin only)",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Premium Plan\",\n  \"price\": 99000,\n  \"currency\": \"IDR\",\n  \"description\": \"Premium subscription with all features\",\n  \"duration\": {\n    \"value\": 1,\n    \"unit\": \"months\"\n  },\n  \"features\": [\n    \"Unlimited access\",\n    \"Priority support\",\n    \"Advanced analytics\"\n  ],\n  \"status\": \"active\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230028,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_update_subscription",
+      "parentId": "fld_subscriptions",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/subscriptions/:id",
+      "name": "Update Subscription (Admin)",
+      "description": "Update an existing subscription plan (Admin only)",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Premium Plan Updated\",\n  \"price\": 149000,\n  \"description\": \"Updated premium subscription\",\n  \"features\": [\n    \"Unlimited access\",\n    \"24/7 Priority support\",\n    \"Advanced analytics\",\n    \"Custom integrations\"\n  ],\n  \"status\": \"active\"\n}"
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "value": "subscription-id-here",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230029,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_delete_subscription",
+      "parentId": "fld_subscriptions",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/subscriptions/:id",
+      "name": "Delete Subscription (Admin)",
+      "description": "Delete a subscription plan (Admin only)",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [
+        {
+          "name": "id",
+          "value": "subscription-id-here",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230030,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_payments",
+      "parentId": "wrk_transellia",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "name": "💰 Payments",
+      "description": "Payment processing endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1702399230040,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_create_payment",
+      "parentId": "fld_payments",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/payments",
+      "name": "Create Payment",
+      "description": "Create a new payment transaction",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"orderId\": \"ORDER-12345\",\n  \"amount\": 150000,\n  \"currency\": \"IDR\",\n  \"customer\": {\n    \"id\": \"customer-id-here\",\n    \"email\": \"customer@example.com\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"phone\": \"081234567890\"\n  },\n  \"paymentMethod\": \"va\",\n  \"bank\": \"bca\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230041,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_create_payment_qr",
+      "parentId": "fld_payments",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/payments",
+      "name": "Create Payment (QR)",
+      "description": "Create a new payment transaction using QR code",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"orderId\": \"ORDER-12345\",\n  \"amount\": 150000,\n  \"currency\": \"IDR\",\n  \"customer\": {\n    \"id\": \"customer-id-here\",\n    \"email\": \"customer@example.com\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"phone\": \"081234567890\"\n  },\n  \"paymentMethod\": \"qr\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230042,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_create_payment_wallet",
+      "parentId": "fld_payments",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/payments",
+      "name": "Create Payment (E-Wallet)",
+      "description": "Create a new payment transaction using E-Wallet",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"orderId\": \"ORDER-12345\",\n  \"amount\": 150000,\n  \"currency\": \"IDR\",\n  \"customer\": {\n    \"id\": \"customer-id-here\",\n    \"email\": \"customer@example.com\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"phone\": \"081234567890\"\n  },\n  \"paymentMethod\": \"wallet\",\n  \"walletProvider\": \"gopay\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230043,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_payment_status",
+      "parentId": "fld_payments",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/payments/:orderId",
+      "name": "Get Payment Status",
+      "description": "Get the status of a payment by order ID",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "orderId",
+          "value": "ORDER-12345",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230044,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_payment_history",
+      "parentId": "wrk_transellia",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "name": "📜 Payment History",
+      "description": "Payment history endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1702399230050,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_get_my_payment_history",
+      "parentId": "fld_payment_history",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/payment-history/user/:userId",
+      "name": "Get My Payment History",
+      "description": "Get payment history for a specific user",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "userId",
+          "value": "user-id-here",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230051,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_all_payment_history",
+      "parentId": "fld_payment_history",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/payment-history",
+      "name": "Get All Payment History (Admin)",
+      "description": "Get all payment histories (Admin only)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230052,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_payment_history_by_id",
+      "parentId": "fld_payment_history",
+      "modified": 1702399230000,
+      "created": 1702399230000,
+      "url": "{{ base_url }}/payment-history/:id",
+      "name": "Get Payment History by ID (Admin)",
+      "description": "Get a specific payment history by ID (Admin only)",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "id",
+          "value": "payment-history-id-here",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "x-api-key",
+          "value": "{{ api_key }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1702399230053,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    }
+  ]
+}
