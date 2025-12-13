@@ -2,12 +2,13 @@ export interface iUser {
     id?: string;
     email?: string;
     role?: string | null;
+    subscriptionId?: string | null;
     subscriptionType?: string | null;
     UserDetails? : {
-        name: string | null;
-        imageProfile?: string | null;
-        phoneNumber?: string | null;
-        address?: string | null;
+        name?: string;
+        imageProfile?: string;
+        phoneNumber?: string;
+        address?: string;
     } | null;
     isEmployee?: boolean | null;
 }
@@ -43,10 +44,10 @@ export interface AuthLoginSuccess {
         subscriptionId: string | null;
         isEmployee: boolean | null;
         UserDetails: {
-            name: string | null;
-            imageProfile: string | null;
-            phoneNumber: string | null;
-            address: string | null;
+            name?: string;
+            imageProfile?: string;
+            phoneNumber?: string;
+            address?: string;
         } | null;
     };
     message: string;
@@ -64,10 +65,10 @@ export interface AuthRegisterSuccess {
         subscriptionId: string | null;
         isEmployee: boolean | null;
         UserDetails: {
-            name: string | null;
-            imageProfile: string | null;
-            phoneNumber: string | null;
-            address: string | null;
+            name?: string;
+            imageProfile?: string;
+            phoneNumber?: string;
+            address?: string;
         } | null;
     };
     message: string;

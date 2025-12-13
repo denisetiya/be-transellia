@@ -1,8 +1,8 @@
-import prisma from '../../config/prisma.config';
 import logger from "../../lib/lib.logger";
 import PaymentHistoryErrorHandler from "./payment-history.error";
 import { PaymentHistoriesResult, PaymentHistoryResult, iPaymentHistory } from "./payment-history.type";
 import { generateId } from '../../lib/lib.id.generator';
+import { PaymentHistoryRepository, type IPaymentHistory } from '../../models';
 
 export default class PaymentHistoryService {
   /**
@@ -12,59 +12,36 @@ export default class PaymentHistoryService {
     try {
       logger.info(`Attempting to fetch payment histories from database - Page: ${page}, Limit: ${limit}`);
       
-      // Calculate skip value for pagination
       const skip = (page - 1) * limit;
       
-      // Fetch payment histories with pagination using Prisma
-      const [paymentHistoriesData, total] = await Promise.all([
-        prisma.paymentHistory.findMany({
-          include: {
-            user: {
-              select: {
-                email: true
-              }
-            },
-            subscription: {
-              select: {
-                name: true,
-                price: true
-              }
-            }
-          },
-          orderBy: {
-            createdAt: 'desc'
-          },
-          skip,
-          take: limit
-        }),
-        
-        prisma.paymentHistory.count()
-      ]);
+      const result = await PaymentHistoryRepository.findAll(skip, limit);
       
-      // Calculate total pages
+      const total = result.total;
       const totalPages = Math.ceil(total / limit);
+      
+      const paymentHistoriesData = result.rows as (IPaymentHistory & { id: string })[]; // ID is already in IPaymentHistory
       
       logger.info(`Successfully fetched ${paymentHistoriesData.length} payment histories (Page: ${page}, Limit: ${limit}, Total: ${total})`);
       
       return {
-        data: paymentHistoriesData.map(payment => ({
+        data: paymentHistoriesData.map((payment) => ({
           id: payment.id,
           userId: payment.userId,
           subscriptionId: payment.subscriptionId,
           orderId: payment.orderId,
           paymentId: payment.paymentId,
-          amount: Number(payment.amount),
+          amount: payment.amount,
           currency: payment.currency,
           paymentMethod: payment.paymentMethod,
           status: payment.status,
-          transactionTime: payment.transactionTime,
-          expiryTime: payment.expiryTime,
+          transactionTime: payment.transactionTime ? new Date(payment.transactionTime) : undefined, // Convert string to Date
+          expiryTime: payment.expiryTime ? new Date(payment.expiryTime) : undefined,
           vaNumber: payment.vaNumber,
           bank: payment.bank,
           qrCode: payment.qrCode,
           redirectUrl: payment.redirectUrl,
-          createdAt: payment.createdAt,
-          updatedAt: payment.updatedAt
+          createdAt: new Date(payment.createdAt), // Convert string to Date
+          updatedAt: new Date(payment.updatedAt)
         })),
         message: "Berhasil mendapatkan daftar riwayat pembayaran",
         success: true,
@@ -88,31 +65,8 @@ export default class PaymentHistoryService {
     try {
       logger.info(`Attempting to fetch payment history from database - ID: ${id}`);
       
-      const paymentHistoryData = await prisma.paymentHistory.findUnique({
-        where: {
-          id: id
-        },
-        include: {
-          user: {
-            select: {
-              email: true
-            }
-          },
-          subscription: {
-            select: {
-              name: true,
-              price: true
-            }
-          }
-        }
-      });
+      const paymentHistory = await PaymentHistoryRepository.findById(id);
       
-      if (!paymentHistoryData) {
-        logger.warn(`Payment history not found - ID: ${id}`);
-        return PaymentHistoryErrorHandler.errors.notFound(id);
-      }
-      
-      const paymentHistory = paymentHistoryData;
       if (!paymentHistory) {
         logger.warn(`Payment history not found - ID: ${id}`);
         return PaymentHistoryErrorHandler.errors.notFound(id);
@@ -127,18 +81,18 @@ export default class PaymentHistoryService {
           subscriptionId: paymentHistory.subscriptionId,
           orderId: paymentHistory.orderId,
           paymentId: paymentHistory.paymentId,
-          amount: Number(paymentHistory.amount),
+          amount: paymentHistory.amount,
           currency: paymentHistory.currency,
           paymentMethod: paymentHistory.paymentMethod,
           status: paymentHistory.status,
-          transactionTime: paymentHistory.transactionTime,
-          expiryTime: paymentHistory.expiryTime,
+          transactionTime: paymentHistory.transactionTime ? new Date(paymentHistory.transactionTime) : undefined,
+          expiryTime: paymentHistory.expiryTime ? new Date(paymentHistory.expiryTime) : undefined,
           vaNumber: paymentHistory.vaNumber,
           bank: paymentHistory.bank,
           qrCode: paymentHistory.qrCode,
           redirectUrl: paymentHistory.redirectUrl,
-          createdAt: paymentHistory.createdAt,
-          updatedAt: paymentHistory.updatedAt
+          createdAt: new Date(paymentHistory.createdAt),
+          updatedAt: new Date(paymentHistory.updatedAt)
         },
         message: "Berhasil mendapatkan detail riwayat pembayaran",
         success: true
@@ -156,61 +110,36 @@ export default class PaymentHistoryService {
     try {
       logger.info(`Attempting to fetch payment histories for user from database - User ID: ${userId}, Page: ${page}, Limit: ${limit}`);
       
-      // Calculate skip value for pagination
       const skip = (page - 1) * limit;
       
-      // Fetch payment histories with pagination using Prisma
-      const [paymentHistoriesData, total] = await Promise.all([
-        prisma.paymentHistory.findMany({
-          where: {
-            userId: userId
-          },
-          include: {
-            subscription: {
-              select: {
-                name: true,
-                price: true
-              }
-            }
-          },
-          orderBy: {
-            createdAt: 'desc'
-          },
-          skip,
-          take: limit
-        }),
-        
-        prisma.paymentHistory.count({
-          where: {
-            userId: userId
-          }
-        })
-      ]);
+      const result = await PaymentHistoryRepository.findByUserId(userId, skip, limit);
       
-      // Calculate total pages
+      const total = result.total;
       const totalPages = Math.ceil(total / limit);
+      
+      const paymentHistoriesData = result.rows;
       
       logger.info(`Successfully fetched ${paymentHistoriesData.length} payment histories for user (User ID: ${userId}, Page: ${page}, Limit: ${limit}, Total: ${total})`);
       
       return {
-        data: paymentHistoriesData.map(payment => ({
+        data: paymentHistoriesData.map((payment) => ({
           id: payment.id,
           userId: payment.userId,
           subscriptionId: payment.subscriptionId,
           orderId: payment.orderId,
           paymentId: payment.paymentId,
-          amount: Number(payment.amount),
+          amount: payment.amount,
           currency: payment.currency,
           paymentMethod: payment.paymentMethod,
           status: payment.status,
-          transactionTime: payment.transactionTime,
-          expiryTime: payment.expiryTime,
+          transactionTime: payment.transactionTime ? new Date(payment.transactionTime) : undefined,
+          expiryTime: payment.expiryTime ? new Date(payment.expiryTime) : undefined,
           vaNumber: payment.vaNumber,
           bank: payment.bank,
           qrCode: payment.qrCode,
           redirectUrl: payment.redirectUrl,
-          createdAt: payment.createdAt,
-          updatedAt: payment.updatedAt
+          createdAt: new Date(payment.createdAt),
+          updatedAt: new Date(payment.updatedAt)
         })),
         message: "Berhasil mendapatkan daftar riwayat pembayaran pengguna",
         success: true,
@@ -234,52 +163,46 @@ export default class PaymentHistoryService {
     try {
       logger.info("Attempting to create payment history in database");
       
-      const paymentHistory = await prisma.paymentHistory.create({
-        data: {
-          id: generateId(),
-          userId: paymentData.userId,
-          subscriptionId: paymentData.subscriptionId,
-          orderId: paymentData.orderId,
-          paymentId: paymentData.paymentId,
-          amount: paymentData.amount.toString(),
-          currency: paymentData.currency,
-          paymentMethod: paymentData.paymentMethod as "va" | "qr" | "wallet" | "credit_card",
-          status: paymentData.status as "pending" | "success" | "failed" | "expired",
-          transactionTime: paymentData.transactionTime,
-          expiryTime: paymentData.expiryTime,
-          vaNumber: paymentData.vaNumber,
-          bank: paymentData.bank,
-          qrCode: paymentData.qrCode,
-          redirectUrl: paymentData.redirectUrl
-        }
-      });
+      const paymentHistoryData: Omit<IPaymentHistory, 'id' | 'type' | 'createdAt' | 'updatedAt'> = {
+        userId: paymentData.userId,
+        subscriptionId: paymentData.subscriptionId,
+        orderId: paymentData.orderId,
+        paymentId: paymentData.paymentId,
+        amount: paymentData.amount,
+        currency: paymentData.currency,
+        paymentMethod: paymentData.paymentMethod as any,
+        status: paymentData.status as any,
+        transactionTime: paymentData.transactionTime instanceof Date ? paymentData.transactionTime.toISOString() : paymentData.transactionTime,
+        expiryTime: paymentData.expiryTime instanceof Date ? paymentData.expiryTime.toISOString() : paymentData.expiryTime,
+        vaNumber: paymentData.vaNumber,
+        bank: paymentData.bank,
+        qrCode: paymentData.qrCode,
+        redirectUrl: paymentData.redirectUrl
+      };
       
-      if (!paymentHistory) {
-        logger.error("Failed to create payment history");
-        return PaymentHistoryErrorHandler.handleDatabaseError(new Error("Failed to create payment history"), 'create payment history');
-      }
+      const created = await PaymentHistoryRepository.create(paymentHistoryData);
       
-      logger.info(`Successfully created payment history - ID: ${paymentHistory.id}`);
+      logger.info(`Successfully created payment history - ID: ${created.id}`);
       
       return {
         data: {
-          id: paymentHistory.id,
-          userId: paymentHistory.userId,
-          subscriptionId: paymentHistory.subscriptionId,
-          orderId: paymentHistory.orderId,
-          paymentId: paymentHistory.paymentId,
-          amount: Number(paymentHistory.amount),
-          currency: paymentHistory.currency,
-          paymentMethod: paymentHistory.paymentMethod,
-          status: paymentHistory.status,
-          transactionTime: paymentHistory.transactionTime,
-          expiryTime: paymentHistory.expiryTime,
-          vaNumber: paymentHistory.vaNumber,
-          bank: paymentHistory.bank,
-          qrCode: paymentHistory.qrCode,
-          redirectUrl: paymentHistory.redirectUrl,
-          createdAt: paymentHistory.createdAt,
-          updatedAt: paymentHistory.updatedAt
+          id: created.id,
+          userId: created.userId,
+          subscriptionId: created.subscriptionId,
+          orderId: created.orderId,
+          paymentId: created.paymentId,
+          amount: created.amount,
+          currency: created.currency,
+          paymentMethod: created.paymentMethod,
+          status: created.status,
+          transactionTime: created.transactionTime ? new Date(created.transactionTime) : undefined,
+          expiryTime: created.expiryTime ? new Date(created.expiryTime) : undefined,
+          vaNumber: created.vaNumber,
+          bank: created.bank,
+          qrCode: created.qrCode,
+          redirectUrl: created.redirectUrl,
+          createdAt: new Date(created.createdAt),
+          updatedAt: new Date(created.updatedAt)
         },
         message: "Berhasil membuat riwayat pembayaran",
         success: true
@@ -297,33 +220,24 @@ export default class PaymentHistoryService {
     try {
       logger.info(`Attempting to update payment history status in database - Order ID: ${orderId}, Status: ${status}`);
       
-      // Check if payment history exists
-      const existingPaymentHistory = await prisma.paymentHistory.findUnique({
-        where: {
-          orderId: orderId
-        }
-      });
+      // Find by orderId
+      const existingPayment = await PaymentHistoryRepository.findByOrderId(orderId);
       
-      if (!existingPaymentHistory) {
+      if (!existingPayment) {
         logger.warn(`Payment history not found for update - Order ID: ${orderId}`);
         return PaymentHistoryErrorHandler.errors.notFound(orderId);
       }
       
-      const paymentHistory = await prisma.paymentHistory.update({
-        where: {
-          orderId: orderId
-        },
-        data: {
-          status: status as "pending" | "success" | "failed" | "expired",
-          paymentId: paymentId
-        }
-      });
-      
-      if (!paymentHistory) {
-        logger.error(`Failed to update payment history status - Order ID: ${orderId}`);
-        return PaymentHistoryErrorHandler.handleDatabaseError(new Error("Failed to update payment history"), `update payment history status for order ID: ${orderId}`);
+      const updateData: Partial<IPaymentHistory> = { status: status as any };
+      if (paymentId) {
+        updateData.paymentId = paymentId;
       }
       
+      await PaymentHistoryRepository.update(existingPayment.id, updateData);
+      const paymentHistory = await PaymentHistoryRepository.findById(existingPayment.id);
+      
+      if (!paymentHistory) throw new Error("Failed to fetch updated payment history");
+
       logger.info(`Successfully updated payment history status - Order ID: ${paymentHistory.orderId}, Status: ${status}`);
       
       return {
@@ -333,18 +247,18 @@ export default class PaymentHistoryService {
           subscriptionId: paymentHistory.subscriptionId,
           orderId: paymentHistory.orderId,
           paymentId: paymentHistory.paymentId,
-          amount: Number(paymentHistory.amount),
+          amount: paymentHistory.amount,
           currency: paymentHistory.currency,
           paymentMethod: paymentHistory.paymentMethod,
           status: paymentHistory.status,
-          transactionTime: paymentHistory.transactionTime,
-          expiryTime: paymentHistory.expiryTime,
+          transactionTime: paymentHistory.transactionTime ? new Date(paymentHistory.transactionTime) : undefined,
+          expiryTime: paymentHistory.expiryTime ? new Date(paymentHistory.expiryTime) : undefined,
           vaNumber: paymentHistory.vaNumber,
           bank: paymentHistory.bank,
           qrCode: paymentHistory.qrCode,
           redirectUrl: paymentHistory.redirectUrl,
-          createdAt: paymentHistory.createdAt,
-          updatedAt: paymentHistory.updatedAt
+          createdAt: new Date(paymentHistory.createdAt),
+          updatedAt: new Date(paymentHistory.updatedAt)
         },
         message: "Berhasil memperbarui status riwayat pembayaran",
         success: true

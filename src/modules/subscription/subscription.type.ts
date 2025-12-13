@@ -5,7 +5,7 @@ export interface iSubscription {
     name: string;
     price: number;
     currency: string;
-    description: string | null;
+    description?: string;
     duration: {
         value: number;
         unit: string;
@@ -14,8 +14,8 @@ export interface iSubscription {
     status: string;
     subscribersCount?: number;
     totalRevenue?: number;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 export enum SubscriptionErrorType {

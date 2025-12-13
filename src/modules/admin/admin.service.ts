@@ -1,8 +1,7 @@
-import prisma from '../../config/prisma.config';
 import logger from '../../lib/lib.logger';
 import Hash from '../../lib/lib.hash';
 import env from '../../config/env.config';
-import { generateId } from '../../lib/lib.id.generator';
+import { UserRepository } from '../../models';
 
 export default class AdminService {
     
@@ -32,15 +31,8 @@ export default class AdminService {
 
             logger.info(`Checking if admin user exists - Email: ${adminEmail}`);
 
-            // Check if admin user already exists
-            const existingAdmin = await prisma.user.findUnique({
-                where: {
-                    email: adminEmail
-                },
-                include: {
-                    userDetails: true
-                }
-            });
+            // Check if admin user already exists using UserRepository
+            const existingAdmin = await UserRepository.findByEmail(adminEmail);
 
             if (existingAdmin && existingAdmin.role === 'admin') {
                 logger.info(`Admin user already exists - Email: ${adminEmail}, ID: ${existingAdmin.id}`);
@@ -51,75 +43,42 @@ export default class AdminService {
                 };
             }
 
-            // Create or update admin user
-            const result = await prisma.$transaction(async (tx) => {
-                let adminUser;
+            if (existingAdmin) {
+                // Update existing user to admin role
+                await UserRepository.update(existingAdmin.id, {
+                    role: 'admin',
+                    isEmployee: false
+                });
+                logger.info(`Updated existing user to admin role - Email: ${adminEmail}, ID: ${existingAdmin.id}`);
+                
+                return {
+                    success: true,
+                    message: 'Admin user updated successfully',
+                    adminCreated: false
+                };
+            } else {
+                // Create new admin user
+                const salt = this.generateSaltFromEmail(adminEmail);
+                const hashedPassword = Hash.hash(adminPassword, salt);
 
-                if (existingAdmin) {
-                    // Update existing user to admin role
-                    adminUser = await tx.user.update({
-                        where: {
-                            email: adminEmail
-                        },
-                        data: {
-                            role: 'admin',
-                            isEmployee: false
-                        },
-                        include: {
-                            userDetails: true
-                        }
-                    });
-                    logger.info(`Updated existing user to admin role - Email: ${adminEmail}, ID: ${adminUser.id}`);
-                } else {
-                    // Create new admin user
-                    const salt = this.generateSaltFromEmail(adminEmail);
-                    const hashedPassword = Hash.hash(adminPassword, salt);
+                const newAdmin = await UserRepository.create({
+                    email: adminEmail,
+                    password: hashedPassword,
+                    role: 'admin',
+                    isEmployee: false,
+                    userDetails: {
+                        name: adminName,
+                    },
+                });
+                
+                logger.info(`Created new admin user - Email: ${adminEmail}, ID: ${newAdmin.id}`);
 
-                    adminUser = await tx.user.create({
-                        data: {
-                            id: generateId(),
-                            email: adminEmail,
-                            password: hashedPassword,
-                            role: 'admin',
-                            isEmployee: false
-                        },
-                        include: {
-                            userDetails: true
-                        }
-                    });
-                    logger.info(`Created new admin user - Email: ${adminEmail}, ID: ${adminUser.id}`);
-                }
-
-                // Create or update user details
-                if (adminUser.userDetails) {
-                    await tx.userDetails.update({
-                        where: {
-                            userId: adminUser.id
-                        },
-                        data: {
-                            name: adminName
-                        }
-                    });
-                } else {
-                    await tx.userDetails.create({
-                        data: {
-                            id: generateId(),
-                            userId: adminUser.id,
-                            name: adminName
-                        }
-                    });
-                }
-
-                return adminUser;
-            });
-
-            logger.info(`Admin initialization completed successfully - Email: ${result.email}, ID: ${result.id}`);
-            
-            return {
-                success: true,
-                message: `Admin user ${existingAdmin ? 'updated' : 'created'} successfully`,
-                adminCreated: !existingAdmin
-            };
+                return {
+                    success: true,
+                    message: 'Admin user created successfully',
+                    adminCreated: true
+                };
+            }
 
         } catch (error) {
             logger.error(`Failed to initialize admin user - Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -143,17 +102,10 @@ export default class AdminService {
                 return null;
             }
 
-            const admin = await prisma.user.findUnique({
-                where: {
-                    email: adminEmail,
-                    role: 'admin'
-                },
-                include: {
-                    userDetails: true
-                }
-            });
-
-            if (!admin) {
+            // Using findByEmail since it's unique
+            const admin = await UserRepository.findByEmail(adminEmail);
+            
+            if (!admin || admin.role !== 'admin') {
                 logger.warn(`Admin user not found - Email: ${adminEmail}`);
                 return null;
             }
@@ -184,14 +136,9 @@ export default class AdminService {
                 };
             }
 
-            const admin = await prisma.user.findUnique({
-                where: {
-                    email: adminEmail,
-                    role: 'admin'
-                }
-            });
+            const admin = await UserRepository.findByEmail(adminEmail);
 
-            if (!admin) {
+            if (!admin || admin.role !== 'admin') {
                 return {
                     success: false,
                     message: 'Admin user not found'
@@ -201,14 +148,7 @@ export default class AdminService {
             const salt = this.generateSaltFromEmail(adminEmail);
             const hashedPassword = Hash.hash(newPassword, salt);
 
-            await prisma.user.update({
-                where: {
-                    id: admin.id
-                },
-                data: {
-                    password: hashedPassword
-                }
-            });
+            await UserRepository.update(admin.id, { password: hashedPassword });
 
             logger.info(`Admin password reset successfully - Email: ${adminEmail}`);
             

@@ -5,6 +5,7 @@ import env from './config/env.config';
 import logger from './lib/lib.logger';
 import GlobalErrorHandler from './lib/lib.error.handler';
 import AdminService from './modules/admin/admin.service';
+import { connectDatabase } from './config/database';
 
 
 // Import type extensions to ensure they are loaded
@@ -81,15 +82,25 @@ const initializeAdmin = async () => {
 
 // Start server only if not in Vercel environment
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-  app.listen(env.PORT, async () => {
-    logger.info(`Server is running on http://localhost:${env.PORT}`);
-    
-    // Initialize admin after server starts
-    await initializeAdmin();
+  // Connect to Couchbase then start server
+  connectDatabase().then(() => {
+    app.listen(env.PORT, async () => {
+      logger.info(`Server is running on http://localhost:${env.PORT}`);
+      
+      // Initialize admin after server starts
+      await initializeAdmin();
+    });
+  }).catch((error) => {
+    logger.error(`Failed to connect to database: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    process.exit(1);
   });
 } else {
-  // For Vercel/serverless environments, initialize admin on module load
-  initializeAdmin();
+  // For Vercel/serverless environments, connect to database and initialize admin on module load
+  connectDatabase().then(() => {
+    initializeAdmin();
+  }).catch((error) => {
+    logger.error(`Failed to connect to database: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  });
 }
 
 // Export app for Vercel

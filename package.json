@@ -13,19 +13,11 @@
     "start": "node dist/index.js",
     "start:prod": "node dist/index.js",
     "build": "pnpm run lint && tsc --skipLibCheck",
-    "postbuild": "pnpm run copy:prisma-client",
-    "postinstall": "pnpm prisma generate",
     "type-check": "pnpm tsc --noEmit",
     "type-check:watch": "pnpm tsc --noEmit --watch",
     "compile": "pnpm tsc",
     "lint": "pnpm eslint .",
-    "lint:fix": "pnpm eslint . --fix",
-    "copy:prisma-client": "node scripts/copy-prisma-client.js",
-    "db:generate": "pnpm prisma generate",
-    "db:push": "pnpm prisma db push",
-    "db:migrate": "pnpm prisma migrate dev",
-    "db:studio": "pnpm prisma studio",
-    "db:seed": "pnpm tsx prisma/seed.ts"
+    "lint:fix": "pnpm eslint . --fix"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -37,7 +29,6 @@
     "eslint": "^9.39.1",
     "globals": "^16.5.0",
     "jiti": "^2.6.1",
-    "prisma": "^5.22.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.47.0"
@@ -46,8 +37,8 @@
     "typescript": "^5.5.0"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0",
     "cookie": "^1.0.2",
+    "couchbase": "4.6.0",
     "dotenv": "^17.2.3",
     "express": "5.1.0",
     "firebase-admin": "^13.6.0",

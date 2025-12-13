@@ -15,8 +15,7 @@ export const createSubscriptionSchema = z.object({
     description: z.string({ message: "Deskripsi subscription wajib diisi" })
         .min(1, { message: "Deskripsi subscription wajib diisi" })
         .max(500, { message: "Deskripsi subscription maksimal 500 karakter" })
-        .optional()
-        .nullable(),
+        .optional(),
     duration: z.object({
         value: z.number({ message: "Durasi nilai wajib diisi" })
             .min(1, { message: "Durasi nilai minimal 1" }),
@@ -49,8 +48,7 @@ export const updateSubscriptionSchema = z.object({
     description: z.string({ message: "Deskripsi subscription wajib diisi" })
         .min(1, { message: "Deskripsi subscription wajib diisi" })
         .max(500, { message: "Deskripsi subscription maksimal 500 karakter" })
-        .optional()
-        .nullable(),
+        .optional(),
     duration: z.object({
         value: z.number({ message: "Durasi nilai wajib diisi" })
             .min(1, { message: "Durasi nilai minimal 1" }),

@@ -3,19 +3,19 @@ export interface iPaymentHistory {
   userId: string;
  subscriptionId: string;
   orderId: string;
-  paymentId?: string | null;
+  paymentId?: string;
   amount: number;
   currency: string;
   paymentMethod: string;
   status: string;
-  transactionTime?: Date | null;
-  expiryTime?: Date | null;
-  vaNumber?: string | null;
-  bank?: string | null;
-  qrCode?: string | null;
-  redirectUrl?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  transactionTime?: Date;
+  expiryTime?: Date;
+  vaNumber?: string;
+  bank?: string;
+  qrCode?: string;
+  redirectUrl?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export enum PaymentHistoryErrorType {

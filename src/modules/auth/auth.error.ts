@@ -193,6 +193,20 @@ export default class AuthErrorHandler {
                 AuthErrorType.INTERNAL_ERROR,
                 "Terjadi kesalahan sistem. Silakan coba lagi.",
                 email
+            ),
+
+        invalidPassword: (email?: string) => 
+            this.createServiceError(
+                AuthErrorType.INVALID_CREDENTIALS,
+                "Password salah. Silakan coba lagi.",
+                email
+            ),
+
+        tokenGenerationFailed: (email?: string) => 
+            this.createServiceError(
+                AuthErrorType.INTERNAL_ERROR,
+                "Gagal membuat token. Silakan coba lagi.",
+                email
             )
     };
 }

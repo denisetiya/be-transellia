@@ -25,6 +25,11 @@ let env : {
   ADMIN_EMAIL?: string;
   ADMIN_PASSWORD?: string;
   ADMIN_NAME?: string;
+  // Couchbase
+  COUCHBASE_URL: string;
+  COUCHBASE_BUCKET: string;
+  COUCHBASE_USERNAME: string;
+  COUCHBASE_PASSWORD: string;
 };
 
 if (process.env.NODE_ENV === 'production') {
@@ -43,6 +48,11 @@ if (process.env.NODE_ENV === 'production') {
       ADMIN_EMAIL: process.env.ADMIN_EMAIL,
       ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
       ADMIN_NAME: process.env.ADMIN_NAME,
+      // Couchbase
+      COUCHBASE_URL: validateEnvVar('COUCHBASE_URL', process.env.COUCHBASE_URL),
+      COUCHBASE_BUCKET: validateEnvVar('COUCHBASE_BUCKET', process.env.COUCHBASE_BUCKET),
+      COUCHBASE_USERNAME: validateEnvVar('COUCHBASE_USERNAME', process.env.COUCHBASE_USERNAME),
+      COUCHBASE_PASSWORD: validateEnvVar('COUCHBASE_PASSWORD', process.env.COUCHBASE_PASSWORD),
     };
  } else {
     env = {
@@ -60,6 +70,11 @@ if (process.env.NODE_ENV === 'production') {
       ADMIN_EMAIL: process.env.ADMIN_EMAIL,
       ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
       ADMIN_NAME: process.env.ADMIN_NAME,
+      // Couchbase
+      COUCHBASE_URL: validateEnvVar('COUCHBASE_URL_DEV', process.env.COUCHBASE_URL_DEV),
+      COUCHBASE_BUCKET: validateEnvVar('COUCHBASE_BUCKET_DEV', process.env.COUCHBASE_BUCKET_DEV),
+      COUCHBASE_USERNAME: validateEnvVar('COUCHBASE_USERNAME_DEV', process.env.COUCHBASE_USERNAME_DEV),
+      COUCHBASE_PASSWORD: validateEnvVar('COUCHBASE_PASSWORD_DEV', process.env.COUCHBASE_PASSWORD_DEV),
     };
  }
 

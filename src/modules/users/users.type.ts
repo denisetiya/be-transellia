@@ -3,15 +3,15 @@ export interface iUserList {
     email: string;
     role: string | null;
     subscriptionId: string | null;
-    UserDetails: {
-        name: string | null;
-        imageProfile: string | null;
-        phoneNumber: string | null;
-        address: string | null;
+    userDetails: {
+        name?: string;
+        imageProfile?: string;
+        phoneNumber?: string;
+        address?: string;
     } | null;
     isEmployee: boolean | null;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface iUserDetails {
@@ -19,37 +19,39 @@ export interface iUserDetails {
     email: string;
     role: string | null;
     subscriptionId: string | null;
-    subscription: {
+    subscription?: {
         id: string;
         name: string;
         price: number;
         currency: string;
-        description: string | null;
+        description?: string;
         durationValue: number;
         durationUnit: string;
         features: string[];
         status: string;
         subscribersCount: number;
         totalRevenue: number;
-        createdAt: Date;
-        updatedAt: Date;
+        createdAt?: string;
+        updatedAt?: string;
     } | null;
-    UserDetails: {
-        name: string | null;
-        imageProfile: string | null;
-        phoneNumber: string | null;
-        address: string | null;
+    userDetails: {
+        name?: string;
+        imageProfile?: string;
+        phoneNumber?: string;
+        address?: string;
     } | null;
     isEmployee: boolean | null;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export enum UsersErrorType {
     DATABASE_CONNECTION = 'DATABASE_CONNECTION',
     TIMEOUT = 'TIMEOUT',
     INTERNAL_ERROR = 'INTERNAL_ERROR',
-    UNAUTHORIZED = 'UNAUTHORIZED'
+    UNAUTHORIZED = 'UNAUTHORIZED',
+    USER_NOT_FOUND = 'USER_NOT_FOUND',
+    EMAIL_ALREADY_EXISTS = 'EMAIL_ALREADY_EXISTS'
 }
 
 export interface UsersError {
@@ -102,7 +104,7 @@ export interface UserUpdateSuccess {
 }
 
 export interface UserDeleteSuccess {
-    data: null;
+    data: { id: string } | null;
     message: string;
     success: true;
 }
