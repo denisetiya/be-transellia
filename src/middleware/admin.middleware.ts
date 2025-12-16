@@ -15,7 +15,7 @@ export const adminMiddleware = (req: Request, res: Response, next: NextFunction)
         }
 
         // Check if user has admin role
-        if (req.user.role !== 'ADMIN') {
+        if (req.user.role !== 'admin') {
             logger.warn(`Forbidden access attempt - User ID: ${req.user.id}, Role: ${req.user.role}, IP: ${req.ip}, Path: ${req.path}`);
             response.forbidden(
                 res,
