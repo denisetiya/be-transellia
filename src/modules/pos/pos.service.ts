@@ -1,5 +1,5 @@
 import logger from '../../lib/lib.logger';
-import { HistorySaleRepository, ProductRepository, type IHistorySale, type ISaleItem, type IProduct, type PaymentMethod } from '../../models';
+import { HistorySaleRepository, ProductRepository, type IHistorySale, type ISaleItem, type PaymentMethod } from '../../models';
 import ExpenseService from '../expense/expense.service';
 
 export interface CheckoutResult {
@@ -215,47 +215,44 @@ export default class POSService {
      */
     static async getSaleByReceiptNumber(receiptNumber: string): Promise<CheckoutResult> {
         try {
-             // We need to implement findByReceiptNumber in repository or use N1QL
-             // Since it's not in repository interface yet, let's assume we might need to add it or fetch all and filter (inefficient but works for now if volume low)
-             // But wait, I see `HistorySaleRepository` only has findByStoreId.
-             
-             // Ideally we should add findByReceiptNumber to repository.
-             // For now, I'll use a direct query or fetch all (dangerous for prod).
-             // Let's rely on finding all properties.
-             // Wait, N1QL query is better.
-             // But I cannot modify repository inside this tool call easily without multiple steps.
-             // I'll assume I can add it or just fail if not found.
-             // Actually, I should probably add `findByReceiptNumber` to repository later.
-             // For now, let's just return NOT_FOUND or similar if I can't query it efficiently.
-             
-             // TEMPORARY: Throw error or use unsafe cast if I can't implement it right now.
-             // But I should try to implement it properly.
-             // For this step I'm replacing content.
-             // I'll leave a comment or try to use N1QL if I had access to cluster here, but repository encapsulates it.
-             
-             // Let's assume we can fetch all and find (very bad for perforamnce but keeps type safety for now during migration)
-             // OR I can use `find` on model if I hadn't removed it... but I am removing it.
-             
-             // I'll add a TODO to update repository.
-             
-             return {
-                 data: null,
-                 message: 'Receipt lookup not yet implemented in new repository',
-                 success: false,
-                 errorType: 'NOT_IMPLEMENTED'
-             };
-
-             /* 
-             // Original logic was:
-             const sales = await HistorySaleModel.find({ receiptNumber }, { limit: 1 });
-             if (sales.rows.length === 0) ...
-             */
+            logger.info(`Fetching sale by receipt number: ${receiptNumber}`);
+            
+            const sale = await HistorySaleRepository.findByReceiptNumber(receiptNumber);
+            
+            if (!sale) {
+                logger.warn(`Sale not found for receipt number: ${receiptNumber}`);
+                return {
+                    data: null,
+                    message: 'Struk tidak ditemukan',
+                    success: false,
+                    errorType: 'NOT_FOUND'
+                };
+            }
+            
+            const saleWithId = sale as (IHistorySale & { id: string });
+            
+            logger.info(`Sale found for receipt number: ${receiptNumber}`);
+            
+            return {
+                data: {
+                    sale: saleWithId,
+                    receipt: {
+                        receiptNumber: saleWithId.receiptNumber || receiptNumber,
+                        items: saleWithId.items,
+                        totalAmount: saleWithId.totalAmount,
+                        paymentMethod: saleWithId.paymentMethod,
+                        date: new Date(saleWithId.createdAt),
+                    }
+                },
+                message: 'Struk berhasil ditemukan',
+                success: true
+            };
              
         } catch (error) {
             logger.error(`Failed to get receipt: ${error instanceof Error ? error.message : 'Unknown error'}`);
             return {
                 data: null,
-                message: `Failed to get receipt: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                message: `Gagal mengambil struk: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 success: false,
                 errorType: 'INTERNAL_ERROR'
             };

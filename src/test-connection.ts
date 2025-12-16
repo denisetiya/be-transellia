@@ -1,4 +1,4 @@
-import { Cluster, connect } from 'couchbase';
+import { connect } from 'couchbase';
 import env from './config/env.config';
 
 async function main() {

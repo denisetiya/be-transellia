@@ -1,7 +1,6 @@
 import logger from "../../lib/lib.logger";
 import PaymentHistoryErrorHandler from "./payment-history.error";
 import { PaymentHistoriesResult, PaymentHistoryResult, iPaymentHistory } from "./payment-history.type";
-import { generateId } from '../../lib/lib.id.generator';
 import { PaymentHistoryRepository, type IPaymentHistory } from '../../models';
 
 export default class PaymentHistoryService {
@@ -170,8 +169,8 @@ export default class PaymentHistoryService {
         paymentId: paymentData.paymentId,
         amount: paymentData.amount,
         currency: paymentData.currency,
-        paymentMethod: paymentData.paymentMethod as any,
-        status: paymentData.status as any,
+        paymentMethod: paymentData.paymentMethod as IPaymentHistory['paymentMethod'],
+        status: paymentData.status as IPaymentHistory['status'],
         transactionTime: paymentData.transactionTime instanceof Date ? paymentData.transactionTime.toISOString() : paymentData.transactionTime,
         expiryTime: paymentData.expiryTime instanceof Date ? paymentData.expiryTime.toISOString() : paymentData.expiryTime,
         vaNumber: paymentData.vaNumber,
@@ -228,7 +227,7 @@ export default class PaymentHistoryService {
         return PaymentHistoryErrorHandler.errors.notFound(orderId);
       }
       
-      const updateData: Partial<IPaymentHistory> = { status: status as any };
+      const updateData: Partial<IPaymentHistory> = { status: status as IPaymentHistory['status'] };
       if (paymentId) {
         updateData.paymentId = paymentId;
       }

@@ -1,6 +1,5 @@
 import logger from '../../lib/lib.logger';
 import { StoreRepository, type IStore } from '../../models';
-import { generateId } from '../../lib/lib.id.generator';
 
 export interface StoreResult {
     data: (IStore & { id: string }) | null;
