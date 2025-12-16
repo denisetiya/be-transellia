@@ -38,7 +38,7 @@ export default class ProductService {
         try {
             logger.info(`Creating product for store: ${storeId}`);
             
-            const productData: Omit<IProduct, 'id' | 'type' | 'createdAt' | 'updatedAt'> = {
+            const productData = {
                 storeId,
                 name: data.name,
                 description: data.description,

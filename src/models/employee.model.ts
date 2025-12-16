@@ -1,59 +1,54 @@
-import { BaseRepository, IBaseDocument } from './base.repository';
+import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IEmployee extends IBaseDocument {
-  type: 'Employee';
+export interface IEmployeeInput {
   userId: string;
   storeId: string;
   baseSalary: number;
 }
 
-export class EmployeeRepository extends BaseRepository {
-  private static readonly DOC_TYPE = 'Employee';
+export interface IEmployee extends Document {
+  _id: mongoose.Types.ObjectId;
+  userId: string;
+  storeId: string;
+  baseSalary: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
+const EmployeeSchema = new Schema<IEmployee>({
+  userId: { type: String, required: true, index: true },
+  storeId: { type: String, required: true, index: true },
+  baseSalary: { type: Number, required: true },
+}, { timestamps: true });
+
+export const EmployeeModel = mongoose.model<IEmployee>('Employee', EmployeeSchema);
+
+export class EmployeeRepository {
   static async findById(id: string): Promise<IEmployee | null> {
-    return this.getById<IEmployee>(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
+    return EmployeeModel.findById(id).exec();
   }
 
   static async findByStoreId(storeId: string): Promise<IEmployee[]> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, 't.storeId = $1');
-    return this.executeQuery<IEmployee>(query, [storeId]);
+    return EmployeeModel.find({ storeId }).exec();
   }
-  
+
   static async findByUserId(userId: string): Promise<IEmployee[]> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, 't.userId = $1');
-    return this.executeQuery<IEmployee>(query, [userId]);
+    return EmployeeModel.find({ userId }).exec();
   }
 
-  static async create(data: Omit<IEmployee, 'id' | 'type' | 'createdAt' | 'updatedAt'>): Promise<IEmployee> {
-    const id = this.generateId();
-    const now = this.now();
-    
-    const doc: IEmployee = {
-      ...data,
-      id,
-      type: this.DOC_TYPE,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await this.insertDoc(id, doc);
-    return doc;
+  static async create(data: IEmployeeInput): Promise<IEmployee> {
+    const employee = new EmployeeModel(data);
+    return employee.save();
   }
-  
-  static async update(id: string, data: Partial<IEmployee>): Promise<void> {
-    const current = await this.findById(id);
-    if (!current) throw new Error('Employee not found');
-    
-    const updated: IEmployee = {
-      ...current,
-      ...data,
-      updatedAt: this.now(),
-    };
-    
-    await this.replaceDoc(id, updated);
+
+  static async update(id: string, data: Partial<IEmployeeInput>): Promise<void> {
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid ID');
+    await EmployeeModel.findByIdAndUpdate(id, { $set: data }).exec();
   }
 
   static async delete(id: string): Promise<void> {
-    await this.removeDoc(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid ID');
+    await EmployeeModel.findByIdAndDelete(id).exec();
   }
 }

@@ -6,7 +6,7 @@ export interface iPaymentHistory {
   paymentId?: string;
   amount: number;
   currency: string;
-  paymentMethod: string;
+  paymentMethod?: string;
   status: string;
   transactionTime?: Date;
   expiryTime?: Date;

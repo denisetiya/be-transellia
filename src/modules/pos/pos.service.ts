@@ -120,7 +120,7 @@ export default class POSService {
             
             const receiptNumber = this.generateReceiptNumber();
             
-            const saleData: Omit<IHistorySale, 'id' | 'type' | 'createdAt' | 'updatedAt'> = {
+            const saleData = {
                 storeId,
                 employeeId,
                 items: processedItems,

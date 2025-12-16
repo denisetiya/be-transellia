@@ -1,8 +1,8 @@
-import { BaseRepository, IBaseDocument } from './base.repository';
+import mongoose, { Schema, Document } from 'mongoose';
 import type { PayrollStatus } from './enums';
+import { PayrollStatusValues } from './enums';
 
-export interface IPayroll extends IBaseDocument {
-  type: 'Payroll';
+export interface IPayrollInput {
   employeeId: string;
   periodStart: string;
   periodEnd: string;
@@ -14,48 +14,57 @@ export interface IPayroll extends IBaseDocument {
   paidDate?: string;
 }
 
-export class PayrollRepository extends BaseRepository {
-  private static readonly DOC_TYPE = 'Payroll';
+export interface IPayroll extends Document {
+  _id: mongoose.Types.ObjectId;
+  employeeId: string;
+  periodStart: string;
+  periodEnd: string;
+  amount: number;
+  bonus: number;
+  deduction: number;
+  netAmount: number;
+  status: PayrollStatus;
+  paidDate?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
+const PayrollSchema = new Schema<IPayroll>({
+  employeeId: { type: String, required: true, index: true },
+  periodStart: { type: String, required: true },
+  periodEnd: { type: String, required: true },
+  amount: { type: Number, required: true },
+  bonus: { type: Number, default: 0 },
+  deduction: { type: Number, default: 0 },
+  netAmount: { type: Number, required: true },
+  status: { type: String, enum: PayrollStatusValues, default: 'draft' },
+  paidDate: String,
+}, { timestamps: true });
+
+export const PayrollModel = mongoose.model<IPayroll>('Payroll', PayrollSchema);
+
+export class PayrollRepository {
   static async findById(id: string): Promise<IPayroll | null> {
-    return this.getById<IPayroll>(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
+    return PayrollModel.findById(id).exec();
   }
 
   static async findByEmployeeId(employeeId: string): Promise<IPayroll[]> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, 't.employeeId = $1');
-    return this.executeQuery<IPayroll>(query, [employeeId]);
+    return PayrollModel.find({ employeeId }).exec();
   }
 
-  static async create(data: Omit<IPayroll, 'id' | 'type' | 'createdAt' | 'updatedAt'>): Promise<IPayroll> {
-    const id = this.generateId();
-    const now = this.now();
-    
-    const doc: IPayroll = {
-      ...data,
-      id,
-      type: this.DOC_TYPE,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await this.insertDoc(id, doc);
-    return doc;
+  static async create(data: IPayrollInput): Promise<IPayroll> {
+    const payroll = new PayrollModel(data);
+    return payroll.save();
   }
-  
-  static async update(id: string, data: Partial<IPayroll>): Promise<void> {
-    const current = await this.findById(id);
-    if (!current) throw new Error('Payroll not found');
-    
-    const updated: IPayroll = {
-      ...current,
-      ...data,
-      updatedAt: this.now(),
-    };
-    
-    await this.replaceDoc(id, updated);
+
+  static async update(id: string, data: Partial<IPayrollInput>): Promise<void> {
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid ID');
+    await PayrollModel.findByIdAndUpdate(id, { $set: data }).exec();
   }
 
   static async delete(id: string): Promise<void> {
-    await this.removeDoc(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid ID');
+    await PayrollModel.findByIdAndDelete(id).exec();
   }
 }

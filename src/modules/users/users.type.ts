@@ -10,8 +10,8 @@ export interface iUserList {
         address?: string;
     } | null;
     isEmployee: boolean | null;
-    createdAt?: string;
-    updatedAt?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 export interface iUserDetails {
@@ -31,8 +31,8 @@ export interface iUserDetails {
         status: string;
         subscribersCount: number;
         totalRevenue: number;
-        createdAt?: string;
-        updatedAt?: string;
+        createdAt?: Date;
+        updatedAt?: Date;
     } | null;
     userDetails: {
         name?: string;
@@ -41,8 +41,8 @@ export interface iUserDetails {
         address?: string;
     } | null;
     isEmployee: boolean | null;
-    createdAt?: string;
-    updatedAt?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 export enum UsersErrorType {

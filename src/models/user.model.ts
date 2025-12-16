@@ -1,8 +1,9 @@
-import { BaseRepository, IBaseDocument } from './base.repository';
+import mongoose, { Schema, Document } from 'mongoose';
 import type { Role } from './enums';
+import { RoleValues } from './enums';
 
-export interface IUser extends IBaseDocument {
-  type: 'User';
+// Input type for creating/updating (plain object)
+export interface IUserInput {
   email: string;
   password: string;
   role: Role;
@@ -16,72 +17,79 @@ export interface IUser extends IBaseDocument {
   };
 }
 
-export class UserRepository extends BaseRepository {
-  private static readonly DOC_TYPE = 'User';
+// Document type (extends Mongoose Document)
+export interface IUser extends Document {
+  _id: mongoose.Types.ObjectId;
+  email: string;
+  password: string;
+  role: Role;
+  isEmployee: boolean;
+  subscriptionId?: string;
+  userDetails?: {
+    name?: string;
+    imageProfile?: string;
+    phoneNumber?: string;
+    address?: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
 
+const UserSchema = new Schema<IUser>({
+  email: { type: String, required: true, unique: true, index: true },
+  password: { type: String, required: true },
+  role: { type: String, enum: RoleValues, default: 'user' },
+  isEmployee: { type: Boolean, default: false },
+  subscriptionId: { type: String, index: true },
+  userDetails: {
+    name: String,
+    imageProfile: String,
+    phoneNumber: String,
+    address: String,
+  },
+}, { timestamps: true });
+
+export const UserModel = mongoose.model<IUser>('User', UserSchema);
+
+// Repository class for backward compatibility
+export class UserRepository {
   static async findByEmail(email: string): Promise<IUser | null> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, 't.email = $1', undefined, 1);
-    return this.executeQueryOne<IUser>(query, [email]);
+    return UserModel.findOne({ email }).exec();
   }
 
   static async findById(id: string): Promise<IUser | null> {
-    return this.getById<IUser>(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
+    return UserModel.findById(id).exec();
   }
 
-  static async create(data: Omit<IUser, 'id' | 'type' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<IUser> {
-    const id = data.id || this.generateId();
-    const now = this.now();
-    
-    const doc: IUser = {
-      ...data,
-      id,
-      type: this.DOC_TYPE,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await this.insertDoc(id, doc);
-    return doc;
+  static async create(data: IUserInput & { id?: string }): Promise<IUser> {
+    const user = new UserModel(data);
+    return user.save();
   }
 
-  static async update(id: string, data: Partial<IUser>): Promise<void> {
-    const current = await this.findById(id);
-    if (!current) throw new Error('User not found');
-    
-    const updated: IUser = {
-      ...current,
-      ...data,
-      updatedAt: this.now(),
-    };
-    
-    await this.replaceDoc(id, updated);
+  static async update(id: string, data: Partial<IUserInput>): Promise<void> {
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid ID');
+    await UserModel.findByIdAndUpdate(id, { $set: data }).exec();
   }
-  
-  static async updateById(id: string, data: Partial<IUser>): Promise<void> {
+
+  static async updateById(id: string, data: Partial<IUserInput>): Promise<void> {
     return this.update(id, data);
   }
 
   static async findBySubscriptionId(subscriptionId: string): Promise<IUser[]> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, 't.subscriptionId = $1');
-    return this.executeQuery<IUser>(query, [subscriptionId]);
+    return UserModel.find({ subscriptionId }).exec();
   }
 
   static async findAllPaginated(skip: number = 0, limit: number = 10): Promise<{ rows: IUser[], total: number }> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, undefined, undefined, limit, skip);
-    const countQuery = this.buildCountQuery(this.DOC_TYPE);
-    
-    const [rows, countResult] = await Promise.all([
-      this.executeQuery<IUser>(query),
-      this.executeQueryOne<{ total: number }>(countQuery)
+    const [rows, total] = await Promise.all([
+      UserModel.find().skip(skip).limit(limit).exec(),
+      UserModel.countDocuments().exec()
     ]);
-    
-    return {
-      rows,
-      total: countResult?.total || 0
-    };
+    return { rows, total };
   }
 
   static async delete(id: string): Promise<void> {
-    await this.removeDoc(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid ID');
+    await UserModel.findByIdAndDelete(id).exec();
   }
 }

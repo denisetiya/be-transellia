@@ -1,8 +1,9 @@
-import { BaseRepository, IBaseDocument } from './base.repository';
+import mongoose, { Schema, Document } from 'mongoose';
 import type { Status, DurationUnit } from './enums';
+import { StatusValues, DurationUnitValues } from './enums';
 
-export interface ISubscriptionList extends IBaseDocument {
-  type: 'SubscriptionList';
+// Input type for creating/updating
+export interface ISubscriptionListInput {
   name: string;
   price: number;
   currency: string;
@@ -15,53 +16,63 @@ export interface ISubscriptionList extends IBaseDocument {
   totalRevenue: number;
 }
 
-export class SubscriptionListRepository extends BaseRepository {
-  private static readonly DOC_TYPE = 'SubscriptionList';
+export interface ISubscriptionList extends Document {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  price: number;
+  currency: string;
+  description?: string;
+  durationValue: number;
+  durationUnit: DurationUnit;
+  features: string[];
+  status: Status;
+  subscribersCount: number;
+  totalRevenue: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
+const SubscriptionListSchema = new Schema<ISubscriptionList>({
+  name: { type: String, required: true, unique: true },
+  price: { type: Number, required: true },
+  currency: { type: String, default: 'IDR' },
+  description: String,
+  durationValue: { type: Number, required: true },
+  durationUnit: { type: String, enum: DurationUnitValues, required: true },
+  features: [{ type: String }],
+  status: { type: String, enum: StatusValues, default: 'active' },
+  subscribersCount: { type: Number, default: 0 },
+  totalRevenue: { type: Number, default: 0 },
+}, { timestamps: true });
+
+export const SubscriptionListModel = mongoose.model<ISubscriptionList>('SubscriptionList', SubscriptionListSchema);
+
+export class SubscriptionListRepository {
   static async findById(id: string): Promise<ISubscriptionList | null> {
-    return this.getById<ISubscriptionList>(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
+    return SubscriptionListModel.findById(id).exec();
   }
 
   static async findByName(name: string): Promise<ISubscriptionList | null> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, 't.name = $1', undefined, 1);
-    return this.executeQueryOne<ISubscriptionList>(query, [name]);
+    return SubscriptionListModel.findOne({ name }).exec();
   }
 
   static async findAllActive(): Promise<ISubscriptionList[]> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, "t.status = 'active'");
-    return this.executeQuery<ISubscriptionList>(query);
+    return SubscriptionListModel.find({ status: 'active' }).exec();
   }
 
-  static async create(data: Omit<ISubscriptionList, 'id' | 'type' | 'createdAt' | 'updatedAt'>): Promise<ISubscriptionList> {
-    const id = this.generateId();
-    const now = this.now();
-    
-    const doc: ISubscriptionList = {
-      ...data,
-      id,
-      type: this.DOC_TYPE,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await this.insertDoc(id, doc);
-    return doc;
+  static async create(data: ISubscriptionListInput): Promise<ISubscriptionList> {
+    const subscription = new SubscriptionListModel(data);
+    return subscription.save();
   }
 
-  static async update(id: string, data: Partial<ISubscriptionList>): Promise<void> {
-    const current = await this.findById(id);
-    if (!current) throw new Error('Subscription not found');
-    
-    const updated: ISubscriptionList = {
-      ...current,
-      ...data,
-      updatedAt: this.now(),
-    };
-    
-    await this.replaceDoc(id, updated);
+  static async update(id: string, data: Partial<ISubscriptionListInput>): Promise<void> {
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid ID');
+    await SubscriptionListModel.findByIdAndUpdate(id, { $set: data }).exec();
   }
 
   static async delete(id: string): Promise<void> {
-    await this.removeDoc(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid ID');
+    await SubscriptionListModel.findByIdAndDelete(id).exec();
   }
 }

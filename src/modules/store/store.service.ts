@@ -29,7 +29,7 @@ export default class StoreService {
                 };
             }
             
-            const storeData: Omit<IStore, 'id' | 'type' | 'createdAt' | 'updatedAt'> = {
+            const storeData = {
                 userId,
                 name,
                 address,

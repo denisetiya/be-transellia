@@ -1,54 +1,50 @@
-import { BaseRepository, IBaseDocument } from './base.repository';
+import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IStore extends IBaseDocument {
-  type: 'Store';
+export interface IStoreInput {
   userId: string;
   name: string;
   address?: string;
 }
 
-export class StoreRepository extends BaseRepository {
-  private static readonly DOC_TYPE = 'Store';
+export interface IStore extends Document {
+  _id: mongoose.Types.ObjectId;
+  userId: string;
+  name: string;
+  address?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
+const StoreSchema = new Schema<IStore>({
+  userId: { type: String, required: true, index: true },
+  name: { type: String, required: true },
+  address: String,
+}, { timestamps: true });
+
+export const StoreModel = mongoose.model<IStore>('Store', StoreSchema);
+
+export class StoreRepository {
   static async findById(id: string): Promise<IStore | null> {
-    return this.getById<IStore>(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
+    return StoreModel.findById(id).exec();
   }
 
   static async findByUserId(userId: string): Promise<IStore[]> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, 't.userId = $1');
-    return this.executeQuery<IStore>(query, [userId]);
+    return StoreModel.find({ userId }).exec();
   }
 
-  static async create(data: Omit<IStore, 'id' | 'type' | 'createdAt' | 'updatedAt'>): Promise<IStore> {
-    const id = this.generateId();
-    const now = this.now();
-    
-    const doc: IStore = {
-      ...data,
-      id,
-      type: this.DOC_TYPE,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await this.insertDoc(id, doc);
-    return doc;
+  static async create(data: IStoreInput): Promise<IStore> {
+    const store = new StoreModel(data);
+    return store.save();
   }
 
-  static async update(id: string, data: Partial<IStore>): Promise<void> {
-    const current = await this.findById(id);
-    if (!current) throw new Error('Store not found');
-    
-    const updated: IStore = {
-      ...current,
-      ...data,
-      updatedAt: this.now(),
-    };
-    
-    await this.replaceDoc(id, updated);
+  static async update(id: string, data: Partial<IStoreInput>): Promise<void> {
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid ID');
+    await StoreModel.findByIdAndUpdate(id, { $set: data }).exec();
   }
-  
+
   static async delete(id: string): Promise<void> {
-    await this.removeDoc(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid ID');
+    await StoreModel.findByIdAndDelete(id).exec();
   }
 }

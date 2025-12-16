@@ -162,15 +162,15 @@ export default class PaymentHistoryService {
     try {
       logger.info("Attempting to create payment history in database");
       
-      const paymentHistoryData: Omit<IPaymentHistory, 'id' | 'type' | 'createdAt' | 'updatedAt'> = {
+      const paymentHistoryData = {
         userId: paymentData.userId,
         subscriptionId: paymentData.subscriptionId,
         orderId: paymentData.orderId,
         paymentId: paymentData.paymentId,
         amount: paymentData.amount,
         currency: paymentData.currency,
-        paymentMethod: paymentData.paymentMethod as IPaymentHistory['paymentMethod'],
-        status: paymentData.status as IPaymentHistory['status'],
+        paymentMethod: paymentData.paymentMethod as 'va' | 'qr' | 'wallet' | 'credit_card' | undefined,
+        status: paymentData.status as 'pending' | 'success' | 'failed' | 'expired',
         transactionTime: paymentData.transactionTime instanceof Date ? paymentData.transactionTime.toISOString() : paymentData.transactionTime,
         expiryTime: paymentData.expiryTime instanceof Date ? paymentData.expiryTime.toISOString() : paymentData.expiryTime,
         vaNumber: paymentData.vaNumber,

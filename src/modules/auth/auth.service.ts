@@ -6,7 +6,7 @@ import env from "../../config/env.config";
 import logger from "../../lib/lib.logger";
 import AuthErrorHandler from "./auth.error";
 import type { AuthLoginResult, AuthRegisterResult } from "./auth.type";
-import { UserRepository, type IUser } from "../../models";
+import { UserRepository } from "../../models";
 
 // Define proper types for query results
 interface UserWithDetails {
@@ -183,10 +183,10 @@ export default class AuthService {
             const hashedPassword = Hash.hash(data.password, salt);
 
             // Create user with UserRepository
-            const newUserData: Omit<IUser, 'id' | 'type' | 'createdAt' | 'updatedAt'> = {
+            const newUserData = {
                 email: data.email,
                 password: hashedPassword,
-                role: 'user',
+                role: 'user' as const,
                 isEmployee: false,
                 userDetails: {
                     name: data.name,
@@ -253,14 +253,14 @@ export default class AuthService {
         const diagnosticInfo: DiagnosticInfo = {
             timestamp: new Date().toISOString(),
             environment: process.env.NODE_ENV,
-            databaseUrlConfigured: !!env.COUCHBASE_URL,
+            databaseUrlConfigured: !!env.MONGODB_URI,
             tests: []
         };
 
         logger.info(`=== DATABASE DIAGNOSTIC TEST START ===`);
         logger.info(`Timestamp: ${diagnosticInfo.timestamp}`);
         logger.info(`Environment: ${diagnosticInfo.environment}`);
-        logger.info(`Couchbase URL configured: ${diagnosticInfo.databaseUrlConfigured}`);
+        logger.info(`MongoDB URL configured: ${diagnosticInfo.databaseUrlConfigured}`);
 
         try {
             // Test 1: Basic query test

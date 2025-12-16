@@ -519,15 +519,15 @@ export default class SubscriptionService {
             }
             
             // Create Free Trial subscription
-            const trialData: Omit<ISubscriptionList, 'id' | 'type' | 'createdAt' | 'updatedAt'> = {
+            const trialData = {
                 name: 'Free Trial',
                 price: 0,
                 currency: 'IDR',
                 description: '1 Bulan Uji Coba Gratis untuk pengguna baru',
                 durationValue: 1,
-                durationUnit: 'months',
+                durationUnit: 'months' as const,
                 features: ['POS System', 'Employee Management', 'Basic Reporting', 'Attendance', 'Inventory'],
-                status: 'active',
+                status: 'active' as const,
                 subscribersCount: 0,
                 totalRevenue: 0,
             };

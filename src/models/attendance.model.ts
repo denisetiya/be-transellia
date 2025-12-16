@@ -1,8 +1,8 @@
-import { BaseRepository, IBaseDocument } from './base.repository';
+import mongoose, { Schema, Document } from 'mongoose';
 import type { AttendanceStatus } from './enums';
+import { AttendanceStatusValues } from './enums';
 
-export interface IAttendance extends IBaseDocument {
-  type: 'Attendance';
+export interface IAttendanceInput {
   employeeId: string;
   date: string;
   status: AttendanceStatus;
@@ -13,49 +13,56 @@ export interface IAttendance extends IBaseDocument {
   imageUrl?: string;
 }
 
-export class AttendanceRepository extends BaseRepository {
-  private static readonly DOC_TYPE = 'Attendance';
+export interface IAttendance extends Document {
+  _id: mongoose.Types.ObjectId;
+  employeeId: string;
+  date: string;
+  status: AttendanceStatus;
+  checkInTime?: string;
+  checkOutTime?: string;
+  latitude?: number;
+  longitude?: number;
+  imageUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
+const AttendanceSchema = new Schema<IAttendance>({
+  employeeId: { type: String, required: true, index: true },
+  date: { type: String, required: true },
+  status: { type: String, enum: AttendanceStatusValues, required: true },
+  checkInTime: String,
+  checkOutTime: String,
+  latitude: Number,
+  longitude: Number,
+  imageUrl: String,
+}, { timestamps: true });
+
+AttendanceSchema.index({ employeeId: 1, date: 1 });
+
+export const AttendanceModel = mongoose.model<IAttendance>('Attendance', AttendanceSchema);
+
+export class AttendanceRepository {
   static async findById(id: string): Promise<IAttendance | null> {
-    return this.getById<IAttendance>(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
+    return AttendanceModel.findById(id).exec();
   }
 
   static async findByEmployeeAndDate(employeeId: string, date: string): Promise<IAttendance | null> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, 't.employeeId = $1 AND t.date = $2', undefined, 1);
-    return this.executeQueryOne<IAttendance>(query, [employeeId, date]);
+    return AttendanceModel.findOne({ employeeId, date }).exec();
   }
-  
+
   static async findByEmployeeId(employeeId: string): Promise<IAttendance[]> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, 't.employeeId = $1');
-    return this.executeQuery<IAttendance>(query, [employeeId]);
+    return AttendanceModel.find({ employeeId }).exec();
   }
 
-  static async create(data: Omit<IAttendance, 'id' | 'type' | 'createdAt' | 'updatedAt'>): Promise<IAttendance> {
-    const id = this.generateId();
-    const now = this.now();
-    
-    const doc: IAttendance = {
-      ...data,
-      id,
-      type: this.DOC_TYPE,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await this.insertDoc(id, doc);
-    return doc;
+  static async create(data: IAttendanceInput): Promise<IAttendance> {
+    const attendance = new AttendanceModel(data);
+    return attendance.save();
   }
 
-  static async update(id: string, data: Partial<IAttendance>): Promise<void> {
-    const current = await this.findById(id);
-    if (!current) throw new Error('Attendance not found');
-    
-    const updated: IAttendance = {
-      ...current,
-      ...data,
-      updatedAt: this.now(),
-    };
-    
-    await this.replaceDoc(id, updated);
+  static async update(id: string, data: Partial<IAttendanceInput>): Promise<void> {
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid ID');
+    await AttendanceModel.findByIdAndUpdate(id, { $set: data }).exec();
   }
 }

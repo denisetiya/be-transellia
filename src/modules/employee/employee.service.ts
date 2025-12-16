@@ -90,11 +90,11 @@ export default class EmployeeService {
             const hashedPassword = Hash.hash(data.password, salt);
             
             // Create user
-            const userData: Omit<IUser, 'id' | 'type' | 'createdAt' | 'updatedAt'> & { id: string } = {
+            const userData = {
                 id: userId,
                 email: data.email,
                 password: hashedPassword,
-                role: 'user',
+                role: 'user' as const,
                 isEmployee: true,
                 userDetails: {
                     name: data.name,
@@ -104,7 +104,7 @@ export default class EmployeeService {
             await UserRepository.create(userData);
             
             // Create employee record
-            const employeeData: Omit<IEmployee, 'id' | 'type' | 'createdAt' | 'updatedAt'> = {
+            const employeeData = {
                 userId,
                 storeId,
                 baseSalary: data.baseSalary || 0,
@@ -253,7 +253,7 @@ export default class EmployeeService {
                 status = 'late';
             }
             
-            const attendanceData: Omit<IAttendance, 'id' | 'type' | 'createdAt' | 'updatedAt'> = {
+            const attendanceData = {
                 employeeId,
                 date: today.toISOString(),
                 status,
@@ -413,7 +413,7 @@ export default class EmployeeService {
             const deductionAmount = deduction || 0;
             const netAmount = amount + bonusAmount - deductionAmount;
             
-            const payrollData: Omit<IPayroll, 'id' | 'type' | 'createdAt' | 'updatedAt'> = {
+            const payrollData = {
                 employeeId,
                 periodStart: periodStart.toISOString(),
                 periodEnd: periodEnd.toISOString(),
@@ -421,7 +421,7 @@ export default class EmployeeService {
                 bonus: bonusAmount,
                 deduction: deductionAmount,
                 netAmount,
-                status: 'draft',
+                status: 'draft' as const,
             };
             
             const payroll = await PayrollRepository.create(payrollData);

@@ -39,7 +39,7 @@ export default class ExpenseService {
         try {
             logger.info(`Creating expense for store: ${storeId}`);
             
-            const expenseData: Omit<IExpense, 'id' | 'type' | 'createdAt' | 'updatedAt'> = {
+            const expenseData = {
                 storeId,
                 name: data.name,
                 description: data.description,

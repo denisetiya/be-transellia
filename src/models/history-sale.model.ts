@@ -1,5 +1,6 @@
-import { BaseRepository, IBaseDocument } from './base.repository';
+import mongoose, { Schema, Document } from 'mongoose';
 import type { PaymentMethod } from './enums';
+import { PaymentMethodValues } from './enums';
 
 export interface ISaleItem {
   productId: string;
@@ -9,8 +10,7 @@ export interface ISaleItem {
   subtotal: number;
 }
 
-export interface IHistorySale extends IBaseDocument {
-  type: 'HistorySale';
+export interface IHistorySaleInput {
   storeId: string;
   employeeId?: string;
   items: ISaleItem[];
@@ -22,36 +22,59 @@ export interface IHistorySale extends IBaseDocument {
   notes?: string;
 }
 
-export class HistorySaleRepository extends BaseRepository {
-  private static readonly DOC_TYPE = 'HistorySale';
+export interface IHistorySale extends Document {
+  _id: mongoose.Types.ObjectId;
+  storeId: string;
+  employeeId?: string;
+  items: ISaleItem[];
+  totalAmount: number;
+  paymentMethod?: PaymentMethod;
+  customerName?: string;
+  customerPhone?: string;
+  receiptNumber?: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
+const SaleItemSchema = new Schema<ISaleItem>({
+  productId: { type: String, required: true },
+  productName: { type: String, required: true },
+  quantity: { type: Number, required: true },
+  unitPrice: { type: Number, required: true },
+  subtotal: { type: Number, required: true },
+}, { _id: false });
+
+const HistorySaleSchema = new Schema<IHistorySale>({
+  storeId: { type: String, required: true, index: true },
+  employeeId: String,
+  items: [SaleItemSchema],
+  totalAmount: { type: Number, required: true },
+  paymentMethod: { type: String, enum: PaymentMethodValues },
+  customerName: String,
+  customerPhone: String,
+  receiptNumber: { type: String, index: true },
+  notes: String,
+}, { timestamps: true });
+
+export const HistorySaleModel = mongoose.model<IHistorySale>('HistorySale', HistorySaleSchema);
+
+export class HistorySaleRepository {
   static async findById(id: string): Promise<IHistorySale | null> {
-    return this.getById<IHistorySale>(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
+    return HistorySaleModel.findById(id).exec();
   }
 
   static async findByStoreId(storeId: string): Promise<IHistorySale[]> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, 't.storeId = $1');
-    return this.executeQuery<IHistorySale>(query, [storeId]);
+    return HistorySaleModel.find({ storeId }).sort({ createdAt: -1 }).exec();
   }
 
   static async findByReceiptNumber(receiptNumber: string): Promise<IHistorySale | null> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, 't.receiptNumber = $1', undefined, 1);
-    return this.executeQueryOne<IHistorySale>(query, [receiptNumber]);
+    return HistorySaleModel.findOne({ receiptNumber }).exec();
   }
 
-  static async create(data: Omit<IHistorySale, 'id' | 'type' | 'createdAt' | 'updatedAt'>): Promise<IHistorySale> {
-    const id = this.generateId();
-    const now = this.now();
-    
-    const doc: IHistorySale = {
-      ...data,
-      id,
-      type: this.DOC_TYPE,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await this.insertDoc(id, doc);
-    return doc;
+  static async create(data: IHistorySaleInput): Promise<IHistorySale> {
+    const sale = new HistorySaleModel(data);
+    return sale.save();
   }
 }

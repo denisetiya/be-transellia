@@ -1,7 +1,6 @@
-import { BaseRepository, IBaseDocument } from './base.repository';
+import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IProduct extends IBaseDocument {
-  type: 'Product';
+export interface IProductInput {
   storeId: string;
   name: string;
   description?: string;
@@ -10,53 +9,55 @@ export interface IProduct extends IBaseDocument {
   sku?: string;
 }
 
-export class ProductRepository extends BaseRepository {
-  private static readonly DOC_TYPE = 'Product';
+export interface IProduct extends Document {
+  _id: mongoose.Types.ObjectId;
+  storeId: string;
+  name: string;
+  description?: string;
+  price: number;
+  stock: number;
+  sku?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
+const ProductSchema = new Schema<IProduct>({
+  storeId: { type: String, required: true, index: true },
+  name: { type: String, required: true },
+  description: String,
+  price: { type: Number, required: true },
+  stock: { type: Number, default: 0 },
+  sku: { type: String, index: true },
+}, { timestamps: true });
+
+export const ProductModel = mongoose.model<IProduct>('Product', ProductSchema);
+
+export class ProductRepository {
   static async findById(id: string): Promise<IProduct | null> {
-    return this.getById<IProduct>(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
+    return ProductModel.findById(id).exec();
   }
 
   static async findByStoreId(storeId: string): Promise<IProduct[]> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, 't.storeId = $1');
-    return this.executeQuery<IProduct>(query, [storeId]);
+    return ProductModel.find({ storeId }).exec();
   }
-  
+
   static async findBySku(sku: string, storeId: string): Promise<IProduct | null> {
-    const query = this.buildSelectQuery(this.DOC_TYPE, 't.sku = $1 AND t.storeId = $2', undefined, 1);
-    return this.executeQueryOne<IProduct>(query, [sku, storeId]);
+    return ProductModel.findOne({ sku, storeId }).exec();
   }
 
-  static async create(data: Omit<IProduct, 'id' | 'type' | 'createdAt' | 'updatedAt'>): Promise<IProduct> {
-    const id = this.generateId();
-    const now = this.now();
-    
-    const doc: IProduct = {
-      ...data,
-      id,
-      type: this.DOC_TYPE,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await this.insertDoc(id, doc);
-    return doc;
+  static async create(data: IProductInput): Promise<IProduct> {
+    const product = new ProductModel(data);
+    return product.save();
   }
 
-  static async update(id: string, data: Partial<IProduct>): Promise<void> {
-    const current = await this.findById(id);
-    if (!current) throw new Error('Product not found');
-    
-    const updated: IProduct = {
-      ...current,
-      ...data,
-      updatedAt: this.now(),
-    };
-    
-    await this.replaceDoc(id, updated);
+  static async update(id: string, data: Partial<IProductInput>): Promise<void> {
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid ID');
+    await ProductModel.findByIdAndUpdate(id, { $set: data }).exec();
   }
-  
+
   static async delete(id: string): Promise<void> {
-    await this.removeDoc(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid ID');
+    await ProductModel.findByIdAndDelete(id).exec();
   }
 }
